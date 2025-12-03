@@ -54,11 +54,7 @@ return [
     |
     */
 
-<<<<<<< HEAD
     'asset_url' => env('APP_ENV') === 'production' ? env('ASSET_URL', null) : null,
-=======
-    'asset_url' => null,
->>>>>>> 315cc16c0b22309447497a0584b4df3ab55431d3
 
     /*
     |--------------------------------------------------------------------------
