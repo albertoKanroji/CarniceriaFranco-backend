@@ -92,6 +92,9 @@ Route::group(['middleware' => 'cors'], function () {
             // Últimas compras del cliente
             Route::get('/cliente/{customerId}/recientes', [SalesController::class, 'getRecentPurchases'])->name('api.ventas.cliente.recientes');
 
+            // Recomendaciones personalizadas para el cliente
+            Route::get('/cliente/{customerId}/recomendaciones', [SalesController::class, 'getRecommendedPurchases'])->name('api.ventas.cliente.recomendaciones');
+
             // Todas las ventas (admin)
             Route::get('/', [SalesController::class, 'getAllSales'])->name('api.ventas.index');
 
@@ -102,18 +105,21 @@ Route::group(['middleware' => 'cors'], function () {
             Route::put('/{saleId}/cancelar', [SalesController::class, 'cancelPurchase'])->name('api.ventas.cancelar');
         });
 
-        Route::prefix('rutinas')->group(function () {
+        // Rutas de Mercado Pago
+        Route::prefix('mercadopago')->group(function () {
+            // Crear preferencia de pago
+            Route::post('/create-preference', [App\Http\Controllers\MercadoPagoController::class, 'createPreference'])->name('api.mercadopago.create-preference');
 
-            Route::get('/', [RutinasControllerAPI::class, 'index']);
-            Route::get('/{id}', [RutinasControllerAPI::class, 'show']);
-            Route::get('/{id}/ejercicios', [RutinasControllerAPI::class, 'showEjercicios']);
-            Route::get('/clientes/{clienteId}/rutinas-personalizadas', [RutinasControllerAPI::class, 'obtenerRutinasPersonalizadas']);
-        });
-        Route::prefix('questions')->group(function () {
+            // Webhook para notificaciones
+            Route::post('/webhook', [App\Http\Controllers\MercadoPagoController::class, 'webhook'])->name('api.mercadopago.webhook');
 
-            Route::get('/questions', [PreguntasControllerAPI::class, 'index']);
-            Route::post('/guardar-respuestas', [PreguntasControllerAPI::class, 'guardarRespuestas']);
+            // URLs de redirección
+            Route::get('/success', [App\Http\Controllers\MercadoPagoController::class, 'success'])->name('api.mercadopago.success');
+            Route::get('/failure', [App\Http\Controllers\MercadoPagoController::class, 'failure'])->name('api.mercadopago.failure');
+            Route::get('/pending', [App\Http\Controllers\MercadoPagoController::class, 'pending'])->name('api.mercadopago.pending');
         });
+
+
 
         Route::prefix('tags')->group(function () {
 
@@ -127,22 +133,6 @@ Route::group(['middleware' => 'cors'], function () {
 
             Route::post('/guardar-accion', [LogController::class, 'store']);
         });
-        Route::prefix('grupos-musculares')->group(function () {
 
-            Route::get('/', [GruposMuscularesControllerlAPI::class, 'index']);
-            Route::get('/{id}', [GruposMuscularesControllerlAPI::class, 'show']);
-            Route::get('/{id}/video', [GruposMuscularesControllerlAPI::class, 'showVideos']);
-
-            Route::get('/video/{id}', [GruposMuscularesControllerlAPI::class, 'showVideoDetail']);
-            Route::get('/{id}/tags', [GruposMuscularesControllerlAPI::class, 'getTags']);
-            Route::get('/{id}/equipo', [GruposMuscularesControllerlAPI::class, 'getEquipo']);
-        });
-        Route::prefix('videos')->group(function () {
-
-            Route::get('/', [GruposMuscularesControllerlAPI::class, 'getVideos']);
-            Route::get('/{id}/tags', [GruposMuscularesControllerlAPI::class, 'getVideosTag']);
-            Route::get('/{id}/equipo', [GruposMuscularesControllerlAPI::class, 'getVideosEquipo']);
-            Route::get('/equipo/{nombre}', [GruposMuscularesControllerlAPI::class, 'getVideosByEquipoName']);
-        });
     });
 });

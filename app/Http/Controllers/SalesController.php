@@ -19,12 +19,15 @@ class SalesController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'customer_id' => 'required|exists:customers,id',
-            'metodo_pago' => 'required|in:efectivo,tarjeta,transferencia,credito',
+            'metodo_pago' => 'required|in:efectivo,tarjeta,transferencia,credito,mercado_pago',
             'productos' => 'required|array|min:1',
             'productos.*.product_id' => 'required|exists:products,id',
             'productos.*.cantidad' => 'required|numeric|min:0.01',
+            'productos.*.monto_pesos' => 'nullable|numeric|min:0', // Para venta por monto
             'descuento' => 'nullable|numeric|min:0',
             'notas' => 'nullable|string',
+            'mercadopago_payment_id' => 'nullable|string', // ID del pago de MercadoPago
+            'mercadopago_status' => 'nullable|string', // Estado del pago de MercadoPago
         ]);
 
         if ($validator->fails()) {
@@ -54,21 +57,38 @@ class SalesController extends Controller
                     throw new \Exception("El producto {$product->nombre} no está disponible");
                 }
 
-                if ($product->stock < $item['cantidad']) {
-                    throw new \Exception("Stock insuficiente para {$product->nombre}. Disponible: {$product->stock}");
+                // Manejar venta por monto en pesos
+                $cantidad = $item['cantidad'];
+                if (isset($item['monto_pesos']) && $item['monto_pesos'] > 0) {
+                    // Convertir monto en pesos a cantidad según la unidad de venta
+                    if (in_array($product->unidad_venta, ['kilogramo', 'gramo'])) {
+                        $precioFinal = $product->en_oferta && $product->precio_oferta ? $product->precio_oferta : $product->precio;
+                        $cantidadKg = $item['monto_pesos'] / $precioFinal;
+
+                        if ($product->unidad_venta == 'kilogramo') {
+                            $cantidad = $cantidadKg; // Mantener en kilos
+                        } else {
+                            $cantidad = $cantidadKg * 1000; // Convertir a gramos
+                        }
+                    }
+                }
+
+                if ($product->stock < $cantidad) {
+                    throw new \Exception("Stock insuficiente para {$product->nombre}. Disponible: {$product->stock}, Solicitado: {$cantidad}");
                 }
 
                 // Calcular precio final (con oferta si aplica)
                 $precioUnitario = $product->precio;
                 $precioOferta = $product->en_oferta ? $product->precio_oferta : null;
                 $precioFinal = $precioOferta ?? $precioUnitario;
-                $itemSubtotal = $precioFinal * $item['cantidad'];
+                $itemSubtotal = $precioFinal * $cantidad;
 
                 $subtotal += $itemSubtotal;
 
                 $detalles[] = [
                     'product' => $product,
-                    'cantidad' => $item['cantidad'],
+                    'cantidad' => $cantidad,
+                    'monto_pesos' => $item['monto_pesos'] ?? null, // Guardar el monto original en pesos
                     'precio_unitario' => $precioUnitario,
                     'precio_oferta' => $precioOferta,
                     'subtotal' => $itemSubtotal,
@@ -81,7 +101,7 @@ class SalesController extends Controller
             $total = $subtotal - $descuento + $impuestos;
 
             // Crear la venta
-            $sale = Sale::create([
+            $saleData = [
                 'customer_id' => $request->customer_id,
                 'fecha_venta' => now(),
                 'subtotal' => $subtotal,
@@ -91,7 +111,15 @@ class SalesController extends Controller
                 'metodo_pago' => $request->metodo_pago,
                 'estatus' => 'completada',
                 'notas' => $request->notas,
-            ]);
+            ];
+
+            // Agregar información de Mercado Pago si existe
+            if ($request->metodo_pago === 'mercado_pago') {
+                $saleData['mercadopago_payment_id'] = $request->mercadopago_payment_id;
+                $saleData['mercadopago_status'] = $request->mercadopago_status;
+            }
+
+            $sale = Sale::create($saleData);
 
             // Crear detalles y actualizar stock
             foreach ($detalles as $detalle) {
@@ -101,6 +129,7 @@ class SalesController extends Controller
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'cantidad' => $detalle['cantidad'],
+                    'monto_pesos' => $detalle['monto_pesos'], // Guardar monto en pesos si existe
                     'precio_unitario' => $detalle['precio_unitario'],
                     'precio_oferta' => $detalle['precio_oferta'],
                     'descuento' => 0,
@@ -429,6 +458,241 @@ class SalesController extends Controller
                 'success' => false,
                 'status' => 500,
                 'message' => 'Error al obtener ventas: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener compras recomendadas para el cliente basadas en su historial
+     */
+    public function getRecommendedPurchases($customerId)
+    {
+        try {
+            $customer = Customers::find($customerId);
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Cliente no encontrado',
+                    'data' => null
+                ], 404);
+            }
+
+            // Obtener los productos más comprados por el cliente
+            $topProducts = SaleDetail::select('product_id', 'producto_nombre', DB::raw('COUNT(*) as compras_count'), DB::raw('AVG(cantidad) as cantidad_promedio'))
+                ->whereHas('sale', function($query) use ($customerId) {
+                    $query->where('customer_id', $customerId)
+                          ->where('estatus', '!=', 'cancelada');
+                })
+                ->groupBy('product_id', 'producto_nombre')
+                ->orderBy('compras_count', 'desc')
+                ->limit(10)
+                ->get();
+
+            if ($topProducts->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'status' => 200,
+                    'message' => 'No hay historial suficiente para generar recomendaciones',
+                    'data' => []
+                ], 200);
+            }
+
+            // Obtener productos relacionados (misma categoría)
+            $relatedProducts = [];
+            foreach ($topProducts->take(5) as $topProduct) {
+                $product = Product::find($topProduct->product_id);
+                if ($product) {
+                    $similarProducts = Product::where('category_id', $product->category_id)
+                        ->where('id', '!=', $product->id)
+                        ->active()
+                        ->conStock()
+                        ->inRandomOrder()
+                        ->limit(2)
+                        ->get();
+
+                    $relatedProducts = array_merge($relatedProducts, $similarProducts->toArray());
+                }
+            }
+
+            // Generar 3 carritos recomendados
+            $recommendations = [];
+
+            // Carrito 1: Productos frecuentes (los que más compra)
+            $carrito1 = [];
+            foreach ($topProducts->take(4) as $topProduct) {
+                $product = Product::find($topProduct->product_id);
+                if ($product && $product->activo && $product->stock > 0) {
+                    $carrito1[] = [
+                        'product_id' => $product->id,
+                        'nombre' => $product->nombre,
+                        'precio' => $product->precio_final,
+                        'cantidad_sugerida' => round($topProduct->cantidad_promedio, 2),
+                        'unidad_venta' => $product->unidad_venta,
+                        'imagen' => $product->imagen,
+                        'categoria' => $product->category->nombre ?? 'Sin categoría',
+                        'motivo' => 'Compras frecuentemente este producto'
+                    ];
+                }
+            }
+
+            if (!empty($carrito1)) {
+                $total1 = array_sum(array_map(function($item) {
+                    return $item['precio'] * $item['cantidad_sugerida'];
+                }, $carrito1));
+
+                $recommendations[] = [
+                    'id' => 1,
+                    'nombre' => 'Tus Favoritos',
+                    'descripcion' => 'Productos que compras con más frecuencia',
+                    'productos' => $carrito1,
+                    'total_estimado' => round($total1, 2),
+                    'ahorro_estimado' => 0
+                ];
+            }
+
+            // Carrito 2: Mix de favoritos + productos nuevos/relacionados
+            $carrito2 = [];
+            // Agregar 2-3 productos favoritos
+            foreach ($topProducts->take(3) as $topProduct) {
+                $product = Product::find($topProduct->product_id);
+                if ($product && $product->activo && $product->stock > 0) {
+                    $carrito2[] = [
+                        'product_id' => $product->id,
+                        'nombre' => $product->nombre,
+                        'precio' => $product->precio_final,
+                        'cantidad_sugerida' => round($topProduct->cantidad_promedio * 0.8, 2), // Cantidad un poco menor
+                        'unidad_venta' => $product->unidad_venta,
+                        'imagen' => $product->imagen,
+                        'categoria' => $product->category->nombre ?? 'Sin categoría',
+                        'motivo' => 'Producto habitual'
+                    ];
+                }
+            }
+
+            // Agregar productos relacionados/nuevos
+            $relatedProductsUnique = array_unique($relatedProducts, SORT_REGULAR);
+            foreach (array_slice($relatedProductsUnique, 0, 2) as $relatedProduct) {
+                if (isset($relatedProduct['id'])) {
+                    $product = Product::find($relatedProduct['id']);
+                    if ($product && $product->activo && $product->stock > 0) {
+                        $carrito2[] = [
+                            'product_id' => $product->id,
+                            'nombre' => $product->nombre,
+                            'precio' => $product->precio_final,
+                            'cantidad_sugerida' => 0.5, // Cantidad pequeña para probar
+                            'unidad_venta' => $product->unidad_venta,
+                            'imagen' => $product->imagen,
+                            'categoria' => $product->category->nombre ?? 'Sin categoría',
+                            'motivo' => 'Te podría gustar (categoría similar)'
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($carrito2)) {
+                $total2 = array_sum(array_map(function($item) {
+                    return $item['precio'] * $item['cantidad_sugerida'];
+                }, $carrito2));
+
+                $recommendations[] = [
+                    'id' => 2,
+                    'nombre' => 'Mix Recomendado',
+                    'descripcion' => 'Tus favoritos + productos que podrían gustarte',
+                    'productos' => $carrito2,
+                    'total_estimado' => round($total2, 2),
+                    'ahorro_estimado' => 0
+                ];
+            }
+
+            // Carrito 3: Productos en oferta + algunos favoritos
+            $carrito3 = [];
+            // Productos en oferta que estén en categorías que le gustan
+            $categoriesIds = $topProducts->map(function($tp) {
+                $product = Product::find($tp->product_id);
+                return $product ? $product->category_id : null;
+            })->filter()->unique()->toArray();
+
+            $productosEnOferta = Product::whereIn('category_id', $categoriesIds)
+                ->enOferta()
+                ->active()
+                ->conStock()
+                ->limit(3)
+                ->get();
+
+            foreach ($productosEnOferta as $product) {
+                $carrito3[] = [
+                    'product_id' => $product->id,
+                    'nombre' => $product->nombre,
+                    'precio' => $product->precio_final,
+                    'precio_original' => $product->precio,
+                    'cantidad_sugerida' => 0.5,
+                    'unidad_venta' => $product->unidad_venta,
+                    'imagen' => $product->imagen,
+                    'categoria' => $product->category->nombre ?? 'Sin categoría',
+                    'motivo' => 'En oferta - categoría de tu interés'
+                ];
+            }
+
+            // Agregar un producto favorito
+            if ($topProducts->first()) {
+                $favProduct = Product::find($topProducts->first()->product_id);
+                if ($favProduct && $favProduct->activo && $favProduct->stock > 0) {
+                    $carrito3[] = [
+                        'product_id' => $favProduct->id,
+                        'nombre' => $favProduct->nombre,
+                        'precio' => $favProduct->precio_final,
+                        'cantidad_sugerida' => round($topProducts->first()->cantidad_promedio, 2),
+                        'unidad_venta' => $favProduct->unidad_venta,
+                        'imagen' => $favProduct->imagen,
+                        'categoria' => $favProduct->category->nombre ?? 'Sin categoría',
+                        'motivo' => 'Tu producto más comprado'
+                    ];
+                }
+            }
+
+            if (!empty($carrito3)) {
+                $total3 = array_sum(array_map(function($item) {
+                    return $item['precio'] * $item['cantidad_sugerida'];
+                }, $carrito3));
+
+                $ahorroEstimado = array_sum(array_map(function($item) {
+                    return isset($item['precio_original']) ?
+                        ($item['precio_original'] - $item['precio']) * $item['cantidad_sugerida'] : 0;
+                }, $carrito3));
+
+                $recommendations[] = [
+                    'id' => 3,
+                    'nombre' => 'Ofertas Para Ti',
+                    'descripcion' => 'Aprovecha las ofertas en tus categorías favoritas',
+                    'productos' => $carrito3,
+                    'total_estimado' => round($total3, 2),
+                    'ahorro_estimado' => round($ahorroEstimado, 2)
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'message' => 'Recomendaciones generadas correctamente',
+                'data' => [
+                    'customer' => [
+                        'id' => $customer->id,
+                        'nombre' => $customer->nombre,
+                        'email' => $customer->email
+                    ],
+                    'recomendaciones' => $recommendations,
+                    'total_recomendaciones' => count($recommendations)
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'status' => 500,
+                'message' => 'Error al generar recomendaciones: ' . $e->getMessage(),
                 'data' => null
             ], 500);
         }

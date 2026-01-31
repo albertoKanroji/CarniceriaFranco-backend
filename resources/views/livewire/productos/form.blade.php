@@ -107,6 +107,27 @@
         </div>
     </div>
 
+    <!-- Venta por monto (pesos) -->
+    <div class="col-sm-12 col-md-6">
+        <div class="form-group">
+            <label>Venta por monto (pesos)</label>
+            <input type="number" wire:model.lazy="monto_venta" class="form-control" placeholder="Ej: 50" min="0" step="0.01">
+            <small class="form-text text-muted">Ingresa el monto en pesos que pide el cliente. Se calculará el peso equivalente automáticamente.</small>
+            @if($monto_venta && $cantidad_venta)
+                <div class="alert alert-info mt-2 p-2">
+                    Equivale a <b>{{ number_format($cantidad_venta, 2) }}</b> gramos
+                </div>
+            @endif
+        </div>
+    </div>
+    <div class="col-sm-12 col-md-6">
+        <div class="form-group">
+            <label>Cantidad (gramos/kilos)</label>
+            <input type="number" wire:model.lazy="cantidad_venta" class="form-control" placeholder="Ej: 250" min="0" step="0.01">
+            <small class="form-text text-muted">Si el cliente pide por peso, ingrésalo aquí. Si llenas el monto, este campo se calcula automáticamente.</small>
+        </div>
+    </div>
+
     <!-- Inventario -->
     <div class="col-sm-12">
         <h5 class="mb-3 mt-3">Inventario</h5>

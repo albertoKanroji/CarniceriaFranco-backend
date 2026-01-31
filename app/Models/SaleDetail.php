@@ -15,6 +15,7 @@ class SaleDetail extends Model
         'sale_id',
         'product_id',
         'cantidad',
+        'monto_pesos',
         'precio_unitario',
         'precio_oferta',
         'descuento',
@@ -27,6 +28,7 @@ class SaleDetail extends Model
 
     protected $casts = [
         'cantidad' => 'decimal:2',
+        'monto_pesos' => 'decimal:2',
         'precio_unitario' => 'decimal:2',
         'precio_oferta' => 'decimal:2',
         'descuento' => 'decimal:2',

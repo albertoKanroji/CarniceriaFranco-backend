@@ -56,6 +56,11 @@ class Product extends Model
         'unidad_venta' => 'kilogramo',
     ];
 
+    // Atributos que se incluyen automáticamente en las respuestas JSON
+    protected $appends = [
+        'imagen_url'
+    ];
+
     // Relación: Un producto pertenece a una categoría
     public function category()
     {
@@ -66,6 +71,24 @@ class Product extends Model
     public function getPrecioFinalAttribute()
     {
         return $this->en_oferta && $this->precio_oferta ? $this->precio_oferta : $this->precio;
+    }
+
+    // Accessor para obtener la URL completa de la imagen
+    public function getImagenUrlAttribute()
+    {
+        if ($this->imagen) {
+            // Si la imagen ya tiene la URL completa, retornarla
+            if (str_starts_with($this->imagen, 'http')) {
+                return $this->imagen;
+            }
+            // Si empieza con /, es una ruta relativa, agregar el dominio
+            if (str_starts_with($this->imagen, '/')) {
+                return url($this->imagen);
+            }
+            // Si es solo el nombre del archivo (compatibilidad hacia atrás)
+            return url('/productos/' . $this->imagen);
+        }
+        return null;
     }
 
     // Accessor para verificar si hay stock disponible

@@ -39,10 +39,7 @@ class CreatePermissionTables extends Migration
         });
 
         Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames) {
-<<<<<<< HEAD
             $table->bigIncrements('id');
-=======
->>>>>>> 315cc16c0b22309447497a0584b4df3ab55431d3
             $table->unsignedBigInteger('permission_id');
 
             $table->string('model_type');
@@ -54,19 +51,11 @@ class CreatePermissionTables extends Migration
                 ->on($tableNames['permissions'])
                 ->onDelete('cascade');
 
-<<<<<<< HEAD
              $table->unique(['permission_id', $columnNames['model_morph_key'], 'model_type'], 'model_has_permissions_unique');
         });
 
         Schema::create($tableNames['model_has_roles'], function (Blueprint $table) use ($tableNames, $columnNames) {
             $table->bigIncrements('id');
-=======
-            $table->primary(['permission_id', $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary');
-        });
-
-        Schema::create($tableNames['model_has_roles'], function (Blueprint $table) use ($tableNames, $columnNames) {
->>>>>>> 315cc16c0b22309447497a0584b4df3ab55431d3
             $table->unsignedBigInteger('role_id');
 
             $table->string('model_type');
@@ -83,10 +72,7 @@ class CreatePermissionTables extends Migration
         });
 
         Schema::create($tableNames['role_has_permissions'], function (Blueprint $table) use ($tableNames) {
-<<<<<<< HEAD
             $table->bigIncrements('id');
-=======
->>>>>>> 315cc16c0b22309447497a0584b4df3ab55431d3
             $table->unsignedBigInteger('permission_id');
             $table->unsignedBigInteger('role_id');
 

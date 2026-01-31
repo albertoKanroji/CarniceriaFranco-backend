@@ -15,7 +15,6 @@ class CreateProductsTable extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-<<<<<<< HEAD
             $table->string('name', 255);
             $table->string('barcode', 25)->nullable();
             $table->decimal('cost', 10, 2)->default(0);
@@ -23,17 +22,8 @@ class CreateProductsTable extends Migration
             $table->integer('stock');
             $table->integer('alerts');
             $table->string('image', 100)->nullable();
-=======
-            $table->string('name',255);
-            $table->string('barcode',25)->nullable();
-            $table->decimal('cost',10,2)->default(0);
-            $table->decimal('price',10,2)->default(0);
-            $table->integer('stock');
-            $table->integer('alerts');
-            $table->string('image',100)->nullable();
->>>>>>> 315cc16c0b22309447497a0584b4df3ab55431d3
 
-            $table->unsignedBigInteger('category_id');           
+            $table->unsignedBigInteger('category_id');
             $table->foreign('category_id')->references('id')->on('categories');
 
             $table->timestamps();

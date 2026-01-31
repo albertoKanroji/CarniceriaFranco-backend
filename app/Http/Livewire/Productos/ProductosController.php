@@ -35,6 +35,9 @@ class ProductosController extends Component
     public $selected_id = 0;
     public $search;
     public $filterCategory = '';
+    // Campos para venta por monto
+    public $monto_venta = null; // Monto en pesos que el cliente pide
+    public $cantidad_venta = null; // Cantidad en gramos/kilos calculada
 
     public function mount()
     {
@@ -90,10 +93,54 @@ class ProductosController extends Component
         $this->fecha_vencimiento = '';
         $this->etiquetas = '';
         $this->selected_id = 0;
+        $this->monto_venta = null;
+        $this->cantidad_venta = null;
         $this->resetValidation();
         $this->resetPage();
-    }
 
+    }
+ /**
+         * Convierte un monto en pesos a gramos/kilos según el precio del producto.
+         * Si el producto se vende por kilo, regresa los gramos equivalentes.
+         * Si se vende por gramo, regresa los gramos equivalentes.
+         * Si se vende por pieza, paquete, caja, litro, regresa null.
+         */
+        public function calcularCantidadPorMonto($monto, $precio, $unidad_venta)
+        {
+            if ($monto <= 0 || $precio <= 0) return null;
+            if (in_array($unidad_venta, ['kilogramo', 'gramo'])) {
+                // Si el producto está en oferta, usar el precio de oferta
+                $cantidad_kg = $monto / $precio; // cantidad en kilos
+                if ($unidad_venta == 'kilogramo') {
+                    return round($cantidad_kg * 1000, 2); // gramos
+                } else if ($unidad_venta == 'gramo') {
+                    return round($cantidad_kg * 1000, 2); // gramos
+                }
+            }
+            // Para otras unidades no aplica
+            return null;
+        }
+
+        /**
+         * Evento Livewire para cuando el usuario ingresa el monto de venta
+         * Calcula la cantidad equivalente y la asigna a $cantidad_venta
+         */
+        public function updatedMontoVenta($value)
+        {
+            $precio_final = $this->en_oferta && $this->precio_oferta ? $this->precio_oferta : $this->precio;
+            $this->cantidad_venta = $this->calcularCantidadPorMonto($value, $precio_final, $this->unidad_venta);
+        }
+
+        /**
+         * Evento Livewire para cuando el usuario cambia la cantidad manualmente
+         * Si cambia la cantidad, borra el monto para evitar confusión
+         */
+        public function updatedCantidadVenta($value)
+        {
+            if (!is_null($value)) {
+                $this->monto_venta = null;
+            }
+        }
     public function edit(Product $product)
     {
         $this->selected_id = $product->id;
@@ -146,11 +193,22 @@ class ProductosController extends Component
 
         $imageName = null;
         if ($this->imagen) {
-            $imageName = uniqid() . '_.' . $this->imagen->extension();
-            $this->imagen->storeAs('public/products', $imageName);
-        }
+            // Crear directorio si no existe
+            $uploadPath = public_path('productos');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
 
-        Product::create([
+            $fileName = uniqid() . '.' . $this->imagen->extension();
+            $tempFile = $this->imagen->getRealPath();
+
+            // Mover el archivo usando copy y unlink para mejor compatibilidad
+            if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
+                $imageName = '/productos/' . $fileName; // Guardar la ruta completa en la BD
+            } else {
+                throw new \Exception('No se pudo guardar la imagen');
+            }
+        }        Product::create([
             'category_id' => $this->category_id,
             'codigo' => $this->codigo,
             'nombre' => $this->nombre,
@@ -200,18 +258,30 @@ class ProductosController extends Component
 
             $imageName = $product->imagen;
             if ($this->imagen) {
-                $imageName = uniqid() . '_.' . $this->imagen->extension();
-                $this->imagen->storeAs('public/products', $imageName);
-
-                if ($product->imagen) {
-                    $oldImagePath = storage_path('app/public/products/' . $product->imagen);
-                    if (file_exists($oldImagePath)) {
-                        unlink($oldImagePath);
-                    }
+                // Crear directorio si no existe
+                $uploadPath = public_path('productos');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
                 }
-            }
 
-            $product->update([
+                $fileName = uniqid() . '.' . $this->imagen->extension();
+                $tempFile = $this->imagen->getRealPath();
+
+                // Mover el archivo usando copy
+                if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
+                    $imageName = '/productos/' . $fileName; // Guardar la ruta completa en la BD
+
+                    // Eliminar imagen anterior si existe
+                    if ($product->imagen) {
+                        $oldImagePath = public_path($product->imagen);
+                        if (file_exists($oldImagePath)) {
+                            unlink($oldImagePath);
+                        }
+                    }
+                } else {
+                    throw new \Exception('No se pudo actualizar la imagen');
+                }
+            }            $product->update([
                 'category_id' => $this->category_id,
                 'codigo' => $this->codigo,
                 'nombre' => $this->nombre,
@@ -247,7 +317,7 @@ class ProductosController extends Component
     {
         try {
             if ($product->imagen) {
-                $imagePath = storage_path('app/public/products/' . $product->imagen);
+                $imagePath = public_path($product->imagen);
                 if (file_exists($imagePath)) {
                     unlink($imagePath);
                 }

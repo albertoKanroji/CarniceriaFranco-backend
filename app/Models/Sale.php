@@ -20,6 +20,8 @@ class Sale extends Model
         'impuestos',
         'total',
         'metodo_pago',
+        'mercadopago_payment_id',
+        'mercadopago_status',
         'estatus',
         'notas',
         'usuario_id',
