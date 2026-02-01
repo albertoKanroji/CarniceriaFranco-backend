@@ -9,6 +9,7 @@ use App\Http\Livewire\UsersController;
 use App\Http\Livewire\PermisosController;
 use App\Http\Controllers\ExportController;
 use App\Http\Livewire\Clientes\ClientesController;
+use App\Http\Livewire\Despachos\DespachosController;
 use App\Http\Livewire\Videos\VideosController;
 use App\Http\Livewire\GruposMusculares\GruposMuscularesController;
 use App\Http\Livewire\Equipo\EquipoController;
@@ -39,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('prod/productos', ProductosController::class);
     Route::get('clientes', ClientesController::class);
     Route::get('categorias', CategoriasController::class);
+    Route::get('despachos', DespachosController::class);
 
     Route::get('ventas', VentasController::class);
     Route::get('logs', LogsController::class);

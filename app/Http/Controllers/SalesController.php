@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Product;
 use App\Models\Customers;
+use App\Services\OrderNotificationService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -112,6 +113,7 @@ class SalesController extends Controller
                 'metodo_pago' => $request->metodo_pago,
                 'estatus' => 'completada',
                 'notas' => $request->notas,
+                'estado_envio' => 'Pendiente', // Estado inicial para seguimiento
             ];
 
             // Agregar información de Mercado Pago si existe
@@ -157,6 +159,9 @@ class SalesController extends Controller
 
             // Cargar relaciones para respuesta
             $sale->load(['details', 'customer']);
+
+            // Enviar notificación por correo al cliente
+            OrderNotificationService::sendPurchaseCompletedNotification($sale);
 
             return response()->json([
                 'success' => true,

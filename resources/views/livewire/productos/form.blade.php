@@ -210,7 +210,7 @@
 
     <div class="col-sm-12 col-md-3">
         <div class="form-group">
-            <label>Fecha Vencimiento</label>
+            <label>Fecha Vencimiento</label><span class="text-danger">*</span></label>
             <input type="date" wire:model.lazy="fecha_vencimiento" class="form-control">
             @error('fecha_vencimiento')
                 <span class="text-danger er">{{ $message }}</span>

@@ -25,6 +25,7 @@ class Sale extends Model
         'estatus',
         'notas',
         'usuario_id',
+        'estado_envio'
     ];
 
     protected $casts = [

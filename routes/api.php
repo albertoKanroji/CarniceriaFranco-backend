@@ -1,16 +1,16 @@
 <?php
 
-use App\Http\Controllers\LogController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\CategoriesController;
+use App\Http\Controllers\CustomersController;
+use App\Http\Controllers\GruposMuscularesControllerlAPI;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\MercadoPagoController;
+use App\Http\Controllers\NotificacionesController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SalesController;
-use App\Http\Controllers\RutinasControllerAPI;
-use App\Http\Controllers\GruposMuscularesControllerlAPI;
-use App\Http\Controllers\PreguntasControllerAPI;
-use App\Http\Controllers\NotificacionesController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -23,7 +23,7 @@ use App\Http\Controllers\NotificacionesController;
 */
 Route::options('/{any}', function () {
     return response()->json([], 200, [
-        'Access-Control-Allow-Origin' => '*', // Cambia '*' por tu dominio en producción
+        'Access-Control-Allow-Origin'  => '*', // Cambia '*' por tu dominio en producción
         'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers' => 'X-Requested-With, Content-Type, X-Token-Auth, Authorization',
     ]);
@@ -107,22 +107,18 @@ Route::group(['middleware' => 'cors'], function () {
 
         // Rutas de Mercado Pago
         Route::prefix('mercadopago')->group(function () {
-            // Ruta de prueba básica
-            Route::get('/test', [App\Http\Controllers\MercadoPagoTestController::class, 'testBasic'])->name('api.mercadopago.test');
-
             // Crear preferencia de pago
-            Route::post('/create-preference', [App\Http\Controllers\MercadoPagoController::class, 'createPreference'])->name('api.mercadopago.create-preference');
+            Route::post('/create-preference', [MercadoPagoController::class, 'createPreference']);
 
-            // Webhook para notificaciones
-            Route::post('/webhook', [App\Http\Controllers\MercadoPagoController::class, 'webhook'])->name('api.mercadopago.webhook');
+            // Webhook de notificaciones
+            Route::post('/webhook', [MercadoPagoController::class, 'webhook']);
 
-            // URLs de redirección
-            Route::get('/success', [App\Http\Controllers\MercadoPagoController::class, 'success'])->name('api.mercadopago.success');
-            Route::get('/failure', [App\Http\Controllers\MercadoPagoController::class, 'failure'])->name('api.mercadopago.failure');
-            Route::get('/pending', [App\Http\Controllers\MercadoPagoController::class, 'pending'])->name('api.mercadopago.pending');
+            // Verificar estado de pago
+            Route::get('/payment-status/{paymentId}', [MercadoPagoController::class, 'checkPaymentStatus']);
+
+            // Obtener venta por preference
+            Route::get('/venta-by-preference/{preferenceId}', [MercadoPagoController::class, 'getVentaByPreference']);
         });
-
-
 
         Route::prefix('tags')->group(function () {
 

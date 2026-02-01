@@ -24,6 +24,7 @@ class SaleDetail extends Model
         'producto_nombre',
         'producto_codigo',
         'unidad_venta',
+        'estado_despacho'
     ];
 
     protected $casts = [

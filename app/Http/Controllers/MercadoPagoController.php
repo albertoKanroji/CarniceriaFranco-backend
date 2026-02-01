@@ -2,336 +2,426 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sale;
+use App\Models\Product;
+use App\Models\Customers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use MercadoPago\SDK;
-use MercadoPago\Payment;
 use MercadoPago\Preference;
 use MercadoPago\Item;
 use MercadoPago\Payer;
-use App\Models\Sale;
-use App\Models\Product;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 
 class MercadoPagoController extends Controller
 {
     public function __construct()
     {
-        // Verificar que las credenciales existan
-        $accessToken = env('MERCADOPAGO_ACCESS_TOKEN');
+        $accessToken = config('mercadopago.access_token');
 
         if (!$accessToken) {
-            throw new \Exception('MERCADOPAGO_ACCESS_TOKEN no configurado en .env');
+            Log::error('MERCADOPAGO_ACCESS_TOKEN no configurado en .env');
         }
 
-        // Configurar SDK de MercadoPago
         SDK::setAccessToken($accessToken);
-
-        Log::info('MercadoPago SDK initialized', [
-            'token_prefix' => substr($accessToken, 0, 10) . '...'
-        ]);
     }
 
-    /**
-     * Crear preferencia de pago - VERSIÓN CORREGIDA
-     */
     public function createPreference(Request $request)
     {
+        Log::info('═══════════════════════════════════════');
+        Log::info('🚀 INICIANDO CREACIÓN DE PREFERENCIA MP');
+        Log::info('═══════════════════════════════════════');
+        Log::info('📦 Datos recibidos:', $request->all());
+
+        $validator = Validator::make($request->all(), [
+            'customer_id' => 'required|exists:customers,id',
+            'productos' => 'required|array|min:1',
+            'productos.*.product_id' => 'required|exists:products,id',
+            'productos.*.cantidad' => 'nullable|numeric|min:0.01',
+            'productos.*.monto_pesos' => 'nullable|numeric|min:1',
+            'metodo_pago' => 'required|string',
+            'descuento' => 'nullable|numeric|min:0',
+            'notas' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('❌ Validación fallida:', $validator->errors()->toArray());
+            return response()->json([
+                'success' => false,
+                'status' => 422,
+                'message' => 'Error de validación',
+                'data' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
         try {
-            // Validación básica
-            $validator = Validator::make($request->all(), [
-                'customer_id' => 'required|exists:customers,id',
-                'productos' => 'required|array|min:1',
-                'productos.*.product_id' => 'required|exists:products,id',
-                'productos.*.cantidad' => 'nullable|numeric|min:0.01',
-                'productos.*.monto_pesos' => 'nullable|numeric|min:0',
-                'descuento' => 'nullable|numeric|min:0',
+            $customer = Customers::findOrFail($request->customer_id);
+            Log::info('👤 Cliente encontrado:', [
+                'id' => $customer->id,
+                'nombre' => $customer->nombre,
+                'correo' => $customer->correo
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'status' => 422,
-                    'message' => 'Error de validación',
-                    'data' => $validator->errors()
-                ], 422);
-            }
-
-            // Validar que cada producto tenga cantidad O monto_pesos
-            foreach ($request->productos as $index => $item) {
-                if (empty($item['cantidad']) && empty($item['monto_pesos'])) {
-                    return response()->json([
-                        'success' => false,
-                        'status' => 422,
-                        'message' => 'Cada producto debe tener cantidad o monto_pesos'
-                    ], 422);
-                }
-            }
-
-            // Configurar SDK
-            $accessToken = env('MERCADOPAGO_ACCESS_TOKEN');
-            SDK::setAccessToken($accessToken);
-
-            // Crear preferencia
-            $preference = new Preference();
             $items = [];
-            $totalAmount = 0;
+            $subtotal = 0;
 
-            // Procesar productos
-            foreach ($request->productos as $item) {
-                $product = Product::find($item['product_id']);
+            foreach ($request->productos as $index => $productoData) {
+                Log::info("📦 Procesando producto #{$index}:", $productoData);
 
-                if (!$product || !$product->activo) {
-                    return response()->json([
-                        'success' => false,
-                        'status' => 404,
-                        'message' => "Producto no disponible: ID {$item['product_id']}"
-                    ], 404);
+                $product = Product::findOrFail($productoData['product_id']);
+                Log::info("✅ Producto encontrado: {$product->nombre}, Precio: \${$product->precio}");
+
+                if (!$product->activo) {
+                    throw new \Exception("El producto {$product->nombre} no está disponible");
                 }
 
-                // Precio unitario (con ofertas)
-                $precioUnitario = ($product->en_oferta && $product->precio_oferta)
-                    ? $product->precio_oferta
-                    : $product->precio;
+                $precioUnitario = $product->en_oferta && $product->precio_oferta
+                    ? floatval($product->precio_oferta)
+                    : floatval($product->precio);
 
-                // Calcular según tipo de venta
-                if (!empty($item['monto_pesos'])) {
-                    // Venta por monto
-                    $monto = floatval($item['monto_pesos']);
-                    $precioTotal = $monto;
-                } else {
-                    // Venta por cantidad
-                    $cantidad = floatval($item['cantidad']);
-                    $precioTotal = $cantidad * $precioUnitario;
+                Log::info("💰 Precio unitario: \${$precioUnitario}");
 
-                    // Verificar stock
-                    if ($product->stock < $cantidad) {
-                        return response()->json([
-                            'success' => false,
-                            'status' => 409,
-                            'message' => "Stock insuficiente para {$product->nombre}"
-                        ], 409);
+                if (isset($productoData['monto_pesos']) && $productoData['monto_pesos'] > 0) {
+                    $montoPesos = floatval($productoData['monto_pesos']);
+                    Log::info("💵 VENTA POR PESOS - Monto: \${$montoPesos}");
+
+                    $cantidadEquivalente = $montoPesos / $precioUnitario;
+                    Log::info("⚖️ Cantidad equivalente: {$cantidadEquivalente}");
+
+                    if ($product->stock < $cantidadEquivalente) {
+                        throw new \Exception("Stock insuficiente para {$product->nombre}");
                     }
+
+                    $item = new Item();
+                    $item->id = strval($product->id);
+                    $item->title = $product->nombre;
+                    $item->description = $product->descripcion ?? "Producto de carnicería";
+                    $item->category_id = "food";
+                    $item->quantity = 1;
+                    $item->unit_price = floatval($montoPesos);
+                    $item->currency_id = "MXN";
+
+                    if ($product->imagen) {
+                        $item->picture_url = url($product->imagen);
+                    }
+
+                    $items[] = $item;
+                    $subtotal += $montoPesos;
+
+                    Log::info("✅ Item PESOS creado: qty=1, price=\${$montoPesos}");
+
+                } else {
+                    $cantidad = floatval($productoData['cantidad'] ?? 1);
+                    Log::info("🔢 VENTA POR CANTIDAD - Cantidad: {$cantidad}");
+
+                    if ($product->stock < $cantidad) {
+                        throw new \Exception("Stock insuficiente para {$product->nombre}");
+                    }
+
+                    $itemSubtotal = $precioUnitario * $cantidad;
+
+                    $item = new Item();
+                    $item->id = strval($product->id);
+                    $item->title = $product->nombre;
+                    $item->description = $product->descripcion ?? "Producto de carnicería";
+                    $item->category_id = "food";
+                    $item->quantity = intval($cantidad);
+                    $item->unit_price = floatval($precioUnitario);
+                    $item->currency_id = "MXN";
+
+                    if ($product->imagen) {
+                        $item->picture_url = url($product->imagen);
+                    }
+
+                    $items[] = $item;
+                    $subtotal += $itemSubtotal;
+
+                    Log::info("✅ Item CANTIDAD creado: qty={$cantidad}, price=\${$precioUnitario}");
                 }
-
-                // Crear item para MP (usando el patrón que funciona)
-                $mpItem = new Item();
-                $mpItem->title = $product->nombre;
-                $mpItem->quantity = 1;
-                $mpItem->unit_price = round($precioTotal, 2);
-                $mpItem->currency_id = 'MXN';
-
-                $items[] = $mpItem;
-                $totalAmount += $precioTotal;
             }
 
-            // Aplicar descuento
-            if ($request->descuento && $request->descuento > 0) {
-                $totalAmount -= $request->descuento;
+            if (empty($items)) {
+                throw new \Exception("No se pudieron procesar los productos");
             }
 
-            // Configurar preferencia (igual que el test que funciona)
+            Log::info("📊 Total items: " . count($items) . ", Subtotal: \${$subtotal}");
+
+            $descuento = floatval($request->descuento ?? 0);
+            $impuestos = ($subtotal - $descuento) * 0.16;
+            $total = $subtotal - $descuento + $impuestos;
+
+            Log::info("💳 Creando venta pendiente - Total: \${$total}");
+
+            $ventaPendiente = Sale::create([
+                'customer_id' => $request->customer_id,
+                'fecha_venta' => now(),
+                'subtotal' => $subtotal,
+                'descuento' => $descuento,
+                'impuestos' => $impuestos,
+                'total' => $total,
+                'metodo_pago' => 'mercado_pago',
+                'estatus' => 'pendiente',
+                'notas' => $request->notas,
+                'estado_envio' => 'Pendiente'
+            ]);
+
+            Log::info("✅ Venta pendiente creada - ID: {$ventaPendiente->id}");
+
+            // Crear preferencia de MercadoPago
+            $preference = new Preference();
             $preference->items = $items;
 
-            $preference->back_urls = [
-                "success" => "http://localhost/api/v1/mercadopago/success",
-                "failure" => "http://localhost/api/v1/mercadopago/failure",
-                "pending" => "http://localhost/api/v1/mercadopago/pending"
+            // Información del pagador
+            $payer = new Payer();
+            $payer->name = $customer->nombre;
+            $payer->surname = $customer->apellido ?? '';
+            $payer->email = $customer->correo;
+
+            Log::info("👤 Payer configurado:", [
+                'name' => $payer->name,
+                'surname' => $payer->surname,
+                'email' => $payer->email
+            ]);
+
+            if ($customer->telefono) {
+                $payer->phone = [
+                    'area_code' => '',
+                    'number' => $customer->telefono
+                ];
+            }
+
+            if ($customer->direccion) {
+                $payer->address = [
+                    'street_name' => $customer->direccion,
+                    'zip_code' => $customer->codigo_postal ?? ''
+                ];
+            }
+
+            $preference->payer = $payer;
+
+            // ✅ SOLUCIÓN DEFINITIVA: No usar back_urls ni auto_return
+            // MercadoPago redirige automáticamente después del pago
+            // Las URLs se configuran en el panel de MercadoPago
+
+            // Metadata
+            $preference->external_reference = strval($ventaPendiente->id);
+            $preference->metadata = [
+                'venta_id' => $ventaPendiente->id,
+                'customer_id' => $customer->id
             ];
 
-            $preference->external_reference = 'CARNICERIA_' . time() . '_CUSTOMER_' . $request->customer_id;
+            // Webhook - Comentado para desarrollo local
+            // En producción: usar ngrok o URL pública con HTTPS
+            // $preference->notification_url = url('/api/v1/mercadopago/webhook');
 
-            Log::info('Creating MercadoPago preference:', [
-                'items_count' => count($items),
-                'total' => $totalAmount,
-                'reference' => $preference->external_reference
-            ]);
+            Log::info("⚠️ Webhook deshabilitado (desarrollo local)");
+
+            // Configuraciones adicionales
+            $preference->statement_descriptor = "CARNICERIA";
+            $preference->expires = true;
+            $preference->expiration_date_from = now()->toIso8601String();
+            $preference->expiration_date_to = now()->addHours(24)->toIso8601String();
+
+            Log::info("💾 Guardando preferencia en MercadoPago...");
 
             // Guardar preferencia
-            $preference->save();
+            $saved = $preference->save();
 
-            Log::info('MercadoPago preference result:', [
-                'preference_id' => $preference->id,
-                'init_point' => $preference->init_point,
-                'sandbox_init_point' => $preference->sandbox_init_point
-            ]);
-
-            // Verificar resultado
-            if (!$preference->id) {
-                return response()->json([
-                    'success' => false,
-                    'status' => 500,
-                    'message' => 'No se pudo crear la preferencia de pago'
-                ], 500);
+            if (!$saved) {
+                Log::error('❌ Error al guardar preferencia');
+                Log::error('Detalles:', [
+                    'error' => $preference->error ?? 'Sin información de error',
+                    'status' => $preference->status ?? 'Sin status'
+                ]);
+                throw new \Exception('No se pudo crear la preferencia en MercadoPago');
             }
+
+            DB::commit();
+
+            Log::info("═══════════════════════════════════════");
+            Log::info("✅ ¡PREFERENCIA CREADA EXITOSAMENTE!");
+            Log::info("═══════════════════════════════════════");
+            Log::info("🆔 Preference ID: {$preference->id}");
+            Log::info("🔗 Init Point: {$preference->init_point}");
+            Log::info("🧪 Sandbox Init Point: {$preference->sandbox_init_point}");
+            Log::info("═══════════════════════════════════════");
 
             return response()->json([
                 'success' => true,
-                'status' => 200,
-                'message' => 'Preferencia de pago creada correctamente',
+                'status' => 201,
+                'message' => 'Preferencia creada exitosamente',
                 'data' => [
                     'preference_id' => $preference->id,
                     'init_point' => $preference->init_point,
                     'sandbox_init_point' => $preference->sandbox_init_point,
-                    'total_amount' => round($totalAmount, 2),
-                    'external_reference' => $preference->external_reference
+                    'venta_pendiente_id' => $ventaPendiente->id
                 ]
-            ]);
+            ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error creating MercadoPago preference: ' . $e->getMessage());
+            DB::rollBack();
+
+            Log::error("═══════════════════════════════════════");
+            Log::error("❌ ERROR AL CREAR PREFERENCIA");
+            Log::error("═══════════════════════════════════════");
+            Log::error("Mensaje: " . $e->getMessage());
+            Log::error("Archivo: " . $e->getFile() . " (Línea: " . $e->getLine() . ")");
+            Log::error("═══════════════════════════════════════");
 
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Error interno: ' . $e->getMessage()
+                'message' => 'Error al crear preferencia: ' . $e->getMessage(),
+                'data' => null
             ], 500);
         }
     }
 
-    /**
-     * Webhook para recibir notificaciones de Mercado Pago
-     */
     public function webhook(Request $request)
     {
+        Log::info('═══ WEBHOOK MERCADOPAGO ═══', $request->all());
+
         try {
-            $data = $request->all();
-            Log::info('MercadoPago webhook received:', $data);
+            $type = $request->input('type');
+            $data = $request->input('data');
 
-            if (isset($data['type']) && $data['type'] === 'payment') {
-                $paymentId = $data['data']['id'];
+            if ($type === 'payment') {
+                $paymentId = $data['id'];
+                Log::info("💳 Procesando pago ID: {$paymentId}");
 
-                // Obtener información del pago
-                $payment = Payment::find_by_id($paymentId);
+                $payment = \MercadoPago\Payment::find_by_id($paymentId);
 
                 if ($payment) {
-                    Log::info('Payment details:', [
-                        'id' => $payment->id,
-                        'status' => $payment->status,
-                        'external_reference' => $payment->external_reference
-                    ]);
+                    $ventaId = intval($payment->external_reference);
+                    $venta = Sale::find($ventaId);
 
-                    // Procesar el pago según su estado
-                    switch ($payment->status) {
-                        case 'approved':
-                            $this->processApprovedPayment($payment);
-                            break;
-                        case 'pending':
-                            $this->processPendingPayment($payment);
-                            break;
-                        case 'rejected':
-                            $this->processRejectedPayment($payment);
-                            break;
+                    if ($venta) {
+                        Log::info("📦 Venta encontrada ID: {$ventaId}");
+
+                        if ($payment->status === 'approved') {
+                            Log::info("✅ Pago APROBADO");
+                            $this->procesarPagoAprobado($venta, $payment);
+                        } elseif ($payment->status === 'rejected') {
+                            Log::info("❌ Pago RECHAZADO");
+                            $venta->estatus = 'cancelada';
+                            $venta->mercadopago_payment_id = $paymentId;
+                            $venta->mercadopago_status = $payment->status;
+                            $venta->save();
+                        } elseif ($payment->status === 'pending') {
+                            Log::info("⏳ Pago PENDIENTE");
+                            $venta->mercadopago_payment_id = $paymentId;
+                            $venta->mercadopago_status = $payment->status;
+                            $venta->save();
+                        }
+                    } else {
+                        Log::warning("⚠️ Venta no encontrada para ID: {$ventaId}");
                     }
+                } else {
+                    Log::warning("⚠️ Pago no encontrado en MP: {$paymentId}");
                 }
             }
 
-            return response()->json(['status' => 'ok'], 200);
+            return response()->json(['success' => true], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error processing MercadoPago webhook: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 500);
+            Log::error('❌ Error en webhook: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Procesar pago aprobado
-     */
-    private function processApprovedPayment($payment)
+    private function procesarPagoAprobado($venta, $payment)
+    {
+        DB::beginTransaction();
+
+        try {
+            $venta->estatus = 'completada';
+            $venta->mercadopago_payment_id = $payment->id;
+            $venta->mercadopago_status = $payment->status;
+            $venta->save();
+
+            $customer = Customers::find($venta->customer_id);
+            if ($customer) {
+                $customer->total_compras = ($customer->total_compras ?? 0) + $venta->total;
+                $customer->numero_compras = ($customer->numero_compras ?? 0) + 1;
+                $customer->fecha_ultima_compra = now();
+                $customer->save();
+
+                Log::info("👤 Cliente actualizado: {$customer->nombre}");
+            }
+
+            DB::commit();
+
+            Log::info('✅ Pago procesado correctamente', [
+                'venta_id' => $venta->id,
+                'payment_id' => $payment->id,
+                'total' => $venta->total
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('❌ Error procesando pago aprobado: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function checkPaymentStatus($paymentId)
     {
         try {
-            // Extraer información de la referencia externa
-            $externalReference = $payment->external_reference;
-            $parts = explode('_', $externalReference);
+            $payment = \MercadoPago\Payment::find_by_id($paymentId);
 
-            if (count($parts) >= 4) {
-                $customerId = $parts[3];
-
-                // Obtener metadata del pago para reconstruir la venta
-                $metadata = $payment->metadata;
-
-                if ($metadata && isset($metadata->customer_id)) {
-                    // Crear la venta usando el SalesController
-                    $salesController = new SalesController();
-
-                    $requestData = [
-                        'customer_id' => $metadata->customer_id,
-                        'productos' => json_decode($metadata->productos, true),
-                        'descuento' => $metadata->descuento ?? 0,
-                        'notas' => ($metadata->notas ?? '') . " | Pago MP: {$payment->id}",
-                        'metodo_pago' => 'mercado_pago',
-                        'mercadopago_payment_id' => $payment->id,
-                        'mercadopago_status' => $payment->status
-                    ];
-
-                    $request = new Request($requestData);
-                    $response = $salesController->store($request);
-
-                    Log::info('Sale created from MercadoPago payment', [
-                        'payment_id' => $payment->id,
-                        'sale_response' => $response->getData()
-                    ]);
-                }
+            if (!$payment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pago no encontrado'
+                ], 404);
             }
 
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => $payment->status,
+                    'status_detail' => $payment->status_detail,
+                    'payment_id' => $payment->id,
+                    'external_reference' => $payment->external_reference
+                ]
+            ], 200);
+
         } catch (\Exception $e) {
-            Log::error('Error processing approved payment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar pago: ' . $e->getMessage()
+            ], 500);
         }
     }
 
-    /**
-     * Procesar pago pendiente
-     */
-    private function processPendingPayment($payment)
+    public function getVentaByPreference($preferenceId)
     {
-        Log::info('Payment pending:', ['payment_id' => $payment->id]);
-        // Aquí puedes implementar lógica para pagos pendientes
-    }
+        try {
+            $venta = Sale::where('estatus', 'pendiente')
+                ->where('metodo_pago', 'mercado_pago')
+                ->latest()
+                ->first();
 
-    /**
-     * Procesar pago rechazado
-     */
-    private function processRejectedPayment($payment)
-    {
-        Log::info('Payment rejected:', ['payment_id' => $payment->id]);
-        // Aquí puedes implementar lógica para pagos rechazados
-    }
+            if (!$venta) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Venta no encontrada'
+                ], 404);
+            }
 
-    /**
-     * Manejar redirección de éxito
-     */
-    public function success(Request $request)
-    {
-        $paymentId = $request->get('payment_id');
-        $status = $request->get('status');
+            return response()->json([
+                'success' => true,
+                'data' => $venta
+            ], 200);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pago procesado correctamente',
-            'payment_id' => $paymentId,
-            'status' => $status
-        ]);
-    }
-
-    /**
-     * Manejar redirección de fallo
-     */
-    public function failure(Request $request)
-    {
-        return response()->json([
-            'success' => false,
-            'message' => 'El pago no pudo ser procesado'
-        ]);
-    }
-
-    /**
-     * Manejar redirección de pendiente
-     */
-    public function pending(Request $request)
-    {
-        return response()->json([
-            'success' => true,
-            'message' => 'El pago está pendiente de confirmación'
-        ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
