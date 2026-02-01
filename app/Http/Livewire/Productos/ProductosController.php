@@ -168,27 +168,30 @@ class ProductosController extends Component
     public function Store()
     {
         $rules = [
-            'category_id'   => 'required|exists:categories,id',
-            'nombre'        => 'required|min:3',
-            'codigo'        => 'nullable|unique:products',
-            'precio'        => 'required|numeric|min:0',
-            'precio_oferta' => 'nullable|numeric|min:0',
-            'unidad_venta'  => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
-            'stock'         => 'required|numeric|min:0',
-            'stock_minimo'  => 'required|numeric|min:0',
+            'category_id'        => 'required|exists:categories,id',
+            'nombre'             => 'required|min:3',
+            'codigo'             => 'nullable|unique:products',
+            'precio'             => 'required|numeric|min:0',
+            'precio_oferta'      => 'nullable|numeric|min:0',
+            'unidad_venta'       => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
+            'stock'              => 'required|numeric|min:0',
+            'stock_minimo'       => 'required|numeric|min:0',
+            'fecha_vencimiento'  => 'required|date',
         ];
 
         $messages = [
-            'category_id.required'  => 'Selecciona una categoría',
-            'category_id.exists'    => 'La categoría no existe',
-            'nombre.required'       => 'Ingresa el nombre del producto',
-            'nombre.min'            => 'El nombre debe tener al menos 3 caracteres',
-            'codigo.unique'         => 'Este código ya existe',
-            'precio.required'       => 'Ingresa el precio',
-            'precio.numeric'        => 'El precio debe ser numérico',
-            'unidad_venta.required' => 'Selecciona la unidad de venta',
-            'stock.required'        => 'Ingresa el stock',
-            'stock_minimo.required' => 'Ingresa el stock mínimo',
+            'category_id.required'       => 'Selecciona una categoría',
+            'category_id.exists'         => 'La categoría no existe',
+            'nombre.required'            => 'Ingresa el nombre del producto',
+            'nombre.min'                 => 'El nombre debe tener al menos 3 caracteres',
+            'codigo.unique'              => 'Este código ya existe',
+            'precio.required'            => 'Ingresa el precio',
+            'precio.numeric'             => 'El precio debe ser numérico',
+            'unidad_venta.required'      => 'Selecciona la unidad de venta',
+            'stock.required'             => 'Ingresa el stock',
+            'stock_minimo.required'      => 'Ingresa el stock mínimo',
+            'fecha_vencimiento.required' => 'Ingresa la fecha de vencimiento',
+            'fecha_vencimiento.date'     => 'La fecha de vencimiento debe ser una fecha válida',
         ];
 
         $this->validate($rules, $messages);
@@ -237,20 +240,23 @@ class ProductosController extends Component
     public function Update()
     {
         $rules = [
-            'category_id'   => 'required|exists:categories,id',
-            'nombre'        => 'required|min:3',
-            'codigo'        => 'nullable|unique:products,codigo,' . $this->selected_id,
-            'precio'        => 'required|numeric|min:0',
-            'precio_oferta' => 'nullable|numeric|min:0',
-            'unidad_venta'  => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
-            'stock'         => 'required|numeric|min:0',
-            'stock_minimo'  => 'required|numeric|min:0',
+            'category_id'        => 'required|exists:categories,id',
+            'nombre'             => 'required|min:3',
+            'codigo'             => 'nullable|unique:products,codigo,' . $this->selected_id,
+            'precio'             => 'required|numeric|min:0',
+            'precio_oferta'      => 'nullable|numeric|min:0',
+            'unidad_venta'       => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
+            'stock'              => 'required|numeric|min:0',
+            'stock_minimo'       => 'required|numeric|min:0',
+            'fecha_vencimiento'  => 'required|date',
         ];
 
         $messages = [
-            'category_id.required' => 'Selecciona una categoría',
-            'nombre.required'      => 'Ingresa el nombre del producto',
-            'precio.required'      => 'Ingresa el precio',
+            'category_id.required'       => 'Selecciona una categoría',
+            'nombre.required'            => 'Ingresa el nombre del producto',
+            'precio.required'            => 'Ingresa el precio',
+            'fecha_vencimiento.required' => 'Ingresa la fecha de vencimiento',
+            'fecha_vencimiento.date'     => 'La fecha de vencimiento debe ser una fecha válida',
         ];
 
         $this->validate($rules, $messages);

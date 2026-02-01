@@ -87,8 +87,21 @@ class CategoriasController extends Component
 
         $imageName = null;
         if ($this->imagen) {
-            $imageName = uniqid() . '_.' . $this->imagen->extension();
-            $this->imagen->storeAs('public/categories', $imageName);
+            // Crear directorio si no existe
+            $uploadPath = public_path('categorias');
+            if (! file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            $fileName = uniqid() . '.' . $this->imagen->extension();
+            $tempFile = $this->imagen->getRealPath();
+
+            // Mover el archivo usando copy y unlink para mejor compatibilidad
+            if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
+                $imageName = '/categorias/' . $fileName; // Guardar la ruta completa en la BD
+            } else {
+                throw new \Exception('No se pudo guardar la imagen');
+            }
         }
 
         Category::create([
@@ -124,14 +137,28 @@ class CategoriasController extends Component
 
             $imageName = $category->imagen;
             if ($this->imagen) {
-                $imageName = uniqid() . '_.' . $this->imagen->extension();
-                $this->imagen->storeAs('public/categories', $imageName);
+                // Crear directorio si no existe
+                $uploadPath = public_path('categorias');
+                if (! file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
 
-                if ($category->imagen) {
-                    $oldImagePath = storage_path('app/public/categories/' . $category->imagen);
-                    if (file_exists($oldImagePath)) {
-                        unlink($oldImagePath);
+                $fileName = uniqid() . '.' . $this->imagen->extension();
+                $tempFile = $this->imagen->getRealPath();
+
+                // Mover el archivo usando copy
+                if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
+                    $imageName = '/categorias/' . $fileName; // Guardar la ruta completa en la BD
+
+                    // Eliminar imagen anterior si existe
+                    if ($category->imagen) {
+                        $oldImagePath = public_path($category->imagen);
+                        if (file_exists($oldImagePath)) {
+                            unlink($oldImagePath);
+                        }
                     }
+                } else {
+                    throw new \Exception('No se pudo actualizar la imagen');
                 }
             }
 
@@ -164,7 +191,7 @@ class CategoriasController extends Component
             }
 
             if ($category->imagen) {
-                $imagePath = storage_path('app/public/categories/' . $category->imagen);
+                $imagePath = public_path($category->imagen);
                 if (file_exists($imagePath)) {
                     unlink($imagePath);
                 }
