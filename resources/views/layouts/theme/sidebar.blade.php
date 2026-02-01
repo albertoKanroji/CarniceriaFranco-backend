@@ -89,7 +89,7 @@
                     </a>
                 </li>
                 <li class="active" style="margin-bottom: 6px; border-radius: 10px; transition: all 0.3s ease; overflow: hidden;">
-                    <a href="{{ url('productos') }}" class="menu-toggle" data-active="true" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3); transition: all 0.3s ease;">
+                    <a href="{{ url('prod/productos') }}" class="menu-toggle" data-active="true" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3); transition: all 0.3s ease;">
                         <div class="base-menu">
                             <div class="base-icons" style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 8px; margin-right: 12px; backdrop-filter: blur(5px);">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"

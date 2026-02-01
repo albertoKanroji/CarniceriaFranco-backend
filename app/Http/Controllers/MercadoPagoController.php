@@ -7,6 +7,7 @@ use MercadoPago\SDK;
 use MercadoPago\Payment;
 use MercadoPago\Preference;
 use MercadoPago\Item;
+use MercadoPago\Payer;
 use App\Models\Sale;
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
@@ -16,21 +17,34 @@ class MercadoPagoController extends Controller
 {
     public function __construct()
     {
-        // Configurar Mercado Pago con el access token
-        SDK::setAccessToken(env('MERCADOPAGO_ACCESS_TOKEN'));
+        // Verificar que las credenciales existan
+        $accessToken = env('MERCADOPAGO_ACCESS_TOKEN');
+
+        if (!$accessToken) {
+            throw new \Exception('MERCADOPAGO_ACCESS_TOKEN no configurado en .env');
+        }
+
+        // Configurar SDK de MercadoPago
+        SDK::setAccessToken($accessToken);
+
+        Log::info('MercadoPago SDK initialized', [
+            'token_prefix' => substr($accessToken, 0, 10) . '...'
+        ]);
     }
 
     /**
-     * Crear una preferencia de pago para Mercado Pago
+     * Crear preferencia de pago - VERSIÓN CORREGIDA
      */
     public function createPreference(Request $request)
     {
         try {
+            // Validación básica
             $validator = Validator::make($request->all(), [
                 'customer_id' => 'required|exists:customers,id',
                 'productos' => 'required|array|min:1',
                 'productos.*.product_id' => 'required|exists:products,id',
-                'productos.*.cantidad' => 'required|numeric|min:0.01',
+                'productos.*.cantidad' => 'nullable|numeric|min:0.01',
+                'productos.*.monto_pesos' => 'nullable|numeric|min:0',
                 'descuento' => 'nullable|numeric|min:0',
             ]);
 
@@ -43,87 +57,113 @@ class MercadoPagoController extends Controller
                 ], 422);
             }
 
+            // Validar que cada producto tenga cantidad O monto_pesos
+            foreach ($request->productos as $index => $item) {
+                if (empty($item['cantidad']) && empty($item['monto_pesos'])) {
+                    return response()->json([
+                        'success' => false,
+                        'status' => 422,
+                        'message' => 'Cada producto debe tener cantidad o monto_pesos'
+                    ], 422);
+                }
+            }
+
+            // Configurar SDK
+            $accessToken = env('MERCADOPAGO_ACCESS_TOKEN');
+            SDK::setAccessToken($accessToken);
+
+            // Crear preferencia
             $preference = new Preference();
             $items = [];
             $totalAmount = 0;
 
-            // Crear items para Mercado Pago
+            // Procesar productos
             foreach ($request->productos as $item) {
                 $product = Product::find($item['product_id']);
 
                 if (!$product || !$product->activo) {
-                    throw new \Exception("Producto no disponible");
+                    return response()->json([
+                        'success' => false,
+                        'status' => 404,
+                        'message' => "Producto no disponible: ID {$item['product_id']}"
+                    ], 404);
                 }
 
-                if ($product->stock < $item['cantidad']) {
-                    throw new \Exception("Stock insuficiente para {$product->nombre}");
-                }
-
-                // Calcular precio final (con oferta si aplica)
-                $precioFinal = $product->en_oferta && $product->precio_oferta
+                // Precio unitario (con ofertas)
+                $precioUnitario = ($product->en_oferta && $product->precio_oferta)
                     ? $product->precio_oferta
                     : $product->precio;
 
-                $mpItem = new Item();
-                $mpItem->id = $product->id;
-                $mpItem->title = $product->nombre;
-                $mpItem->quantity = (int)$item['cantidad'];
-                $mpItem->unit_price = (float)$precioFinal;
-                $mpItem->currency_id = 'MXN';
-                $mpItem->description = $product->descripcion ?? $product->nombre;
+                // Calcular según tipo de venta
+                if (!empty($item['monto_pesos'])) {
+                    // Venta por monto
+                    $monto = floatval($item['monto_pesos']);
+                    $precioTotal = $monto;
+                } else {
+                    // Venta por cantidad
+                    $cantidad = floatval($item['cantidad']);
+                    $precioTotal = $cantidad * $precioUnitario;
 
-                if ($product->imagen_url) {
-                    $mpItem->picture_url = $product->imagen_url;
+                    // Verificar stock
+                    if ($product->stock < $cantidad) {
+                        return response()->json([
+                            'success' => false,
+                            'status' => 409,
+                            'message' => "Stock insuficiente para {$product->nombre}"
+                        ], 409);
+                    }
                 }
 
+                // Crear item para MP (usando el patrón que funciona)
+                $mpItem = new Item();
+                $mpItem->title = $product->nombre;
+                $mpItem->quantity = 1;
+                $mpItem->unit_price = round($precioTotal, 2);
+                $mpItem->currency_id = 'MXN';
+
                 $items[] = $mpItem;
-                $totalAmount += $precioFinal * $item['cantidad'];
+                $totalAmount += $precioTotal;
             }
 
-            // Aplicar descuento si existe
+            // Aplicar descuento
             if ($request->descuento && $request->descuento > 0) {
                 $totalAmount -= $request->descuento;
             }
 
+            // Configurar preferencia (igual que el test que funciona)
             $preference->items = $items;
 
-            // Configurar URLs de redirección
             $preference->back_urls = [
-                "success" => env('APP_URL') . "/api/v1/mercadopago/success",
-                "failure" => env('APP_URL') . "/api/v1/mercadopago/failure",
-                "pending" => env('APP_URL') . "/api/v1/mercadopago/pending"
+                "success" => "http://localhost/api/v1/mercadopago/success",
+                "failure" => "http://localhost/api/v1/mercadopago/failure",
+                "pending" => "http://localhost/api/v1/mercadopago/pending"
             ];
 
-            $preference->auto_return = "approved";
+            $preference->external_reference = 'CARNICERIA_' . time() . '_CUSTOMER_' . $request->customer_id;
 
-            // Configurar datos adicionales
-            $preference->external_reference = "SALE_" . uniqid() . "_CUSTOMER_" . $request->customer_id;
+            Log::info('Creating MercadoPago preference:', [
+                'items_count' => count($items),
+                'total' => $totalAmount,
+                'reference' => $preference->external_reference
+            ]);
 
-            // Configurar notificaciones webhook
-            $preference->notification_url = env('APP_URL') . "/api/v1/mercadopago/webhook";
-
-            // Configurar datos del pagador
-            $customer = \App\Models\Customers::find($request->customer_id);
-            if ($customer) {
-                $preference->payer = [
-                    "name" => $customer->nombre,
-                    "email" => $customer->email ?? 'customer@example.com',
-                    "phone" => [
-                        "area_code" => "52",
-                        "number" => $customer->telefono ?? "1234567890"
-                    ]
-                ];
-            }
-
-            // Metadata adicional
-            $preference->metadata = [
-                'customer_id' => $request->customer_id,
-                'productos' => json_encode($request->productos),
-                'descuento' => $request->descuento ?? 0,
-                'notas' => $request->notas ?? null
-            ];
-
+            // Guardar preferencia
             $preference->save();
+
+            Log::info('MercadoPago preference result:', [
+                'preference_id' => $preference->id,
+                'init_point' => $preference->init_point,
+                'sandbox_init_point' => $preference->sandbox_init_point
+            ]);
+
+            // Verificar resultado
+            if (!$preference->id) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 500,
+                    'message' => 'No se pudo crear la preferencia de pago'
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
@@ -133,10 +173,10 @@ class MercadoPagoController extends Controller
                     'preference_id' => $preference->id,
                     'init_point' => $preference->init_point,
                     'sandbox_init_point' => $preference->sandbox_init_point,
-                    'total_amount' => $totalAmount,
+                    'total_amount' => round($totalAmount, 2),
                     'external_reference' => $preference->external_reference
                 ]
-            ], 200);
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Error creating MercadoPago preference: ' . $e->getMessage());
@@ -144,8 +184,7 @@ class MercadoPagoController extends Controller
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Error al crear preferencia de pago: ' . $e->getMessage(),
-                'data' => null
+                'message' => 'Error interno: ' . $e->getMessage()
             ], 500);
         }
     }

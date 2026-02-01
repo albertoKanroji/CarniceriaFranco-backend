@@ -107,6 +107,9 @@ Route::group(['middleware' => 'cors'], function () {
 
         // Rutas de Mercado Pago
         Route::prefix('mercadopago')->group(function () {
+            // Ruta de prueba básica
+            Route::get('/test', [App\Http\Controllers\MercadoPagoTestController::class, 'testBasic'])->name('api.mercadopago.test');
+
             // Crear preferencia de pago
             Route::post('/create-preference', [App\Http\Controllers\MercadoPagoController::class, 'createPreference'])->name('api.mercadopago.create-preference');
 

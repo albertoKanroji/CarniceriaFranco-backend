@@ -35,13 +35,11 @@ Auth::routes(['register' => false]); // deshabilitamos el registro de nuevos use
 //Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/home', Dash::class);
 
-
 Route::middleware(['auth'])->group(function () {
-
-
+    Route::get('prod/productos', ProductosController::class);
     Route::get('clientes', ClientesController::class);
     Route::get('categorias', CategoriasController::class);
-    Route::get('productos', ProductosController::class);
+
     Route::get('ventas', VentasController::class);
     Route::get('logs', LogsController::class);
     Route::get('videos', VideosController::class);

@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Product;
 use App\Models\Customers;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -50,11 +51,11 @@ class SalesController extends Controller
                 $product = Product::find($item['product_id']);
 
                 if (!$product) {
-                    throw new \Exception("Producto con ID {$item['product_id']} no encontrado");
+                    throw new Exception("Producto con ID {$item['product_id']} no encontrado");
                 }
 
                 if (!$product->activo) {
-                    throw new \Exception("El producto {$product->nombre} no está disponible");
+                    throw new Exception("El producto {$product->nombre} no está disponible");
                 }
 
                 // Manejar venta por monto en pesos
@@ -74,7 +75,7 @@ class SalesController extends Controller
                 }
 
                 if ($product->stock < $cantidad) {
-                    throw new \Exception("Stock insuficiente para {$product->nombre}. Disponible: {$product->stock}, Solicitado: {$cantidad}");
+                    throw new Exception("Stock insuficiente para {$product->nombre}. Disponible: {$product->stock}, Solicitado: {$cantidad}");
                 }
 
                 // Calcular precio final (con oferta si aplica)
