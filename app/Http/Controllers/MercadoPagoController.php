@@ -1,18 +1,17 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Models\Sale;
-use App\Models\Product;
 use App\Models\Customers;
+use App\Models\Product;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use MercadoPago\SDK;
-use MercadoPago\Preference;
 use MercadoPago\Item;
 use MercadoPago\Payer;
+use MercadoPago\Preference;
+use MercadoPago\SDK;
 
 class MercadoPagoController extends Controller
 {
@@ -20,7 +19,13 @@ class MercadoPagoController extends Controller
     {
         $accessToken = config('mercadopago.access_token');
 
-        if (!$accessToken) {
+        // ⚠️ DEBUG: Verifica qué credencial está usando
+        Log::info('🔑 Access Token cargado:', [
+            'token_prefix' => substr($accessToken, 0, 10),
+            'is_test'      => strpos($accessToken, 'TEST-') === 0 ? 'SÍ ✅' : 'NO ❌ PRODUCCIÓN',
+        ]);
+
+        if (! $accessToken) {
             Log::error('MERCADOPAGO_ACCESS_TOKEN no configurado en .env');
         }
 
@@ -35,23 +40,23 @@ class MercadoPagoController extends Controller
         Log::info('📦 Datos recibidos:', $request->all());
 
         $validator = Validator::make($request->all(), [
-            'customer_id' => 'required|exists:customers,id',
-            'productos' => 'required|array|min:1',
-            'productos.*.product_id' => 'required|exists:products,id',
-            'productos.*.cantidad' => 'nullable|numeric|min:0.01',
+            'customer_id'             => 'required|exists:customers,id',
+            'productos'               => 'required|array|min:1',
+            'productos.*.product_id'  => 'required|exists:products,id',
+            'productos.*.cantidad'    => 'nullable|numeric|min:0.01',
             'productos.*.monto_pesos' => 'nullable|numeric|min:1',
-            'metodo_pago' => 'required|string',
-            'descuento' => 'nullable|numeric|min:0',
-            'notas' => 'nullable|string'
+            'metodo_pago'             => 'required|string',
+            'descuento'               => 'nullable|numeric|min:0',
+            'notas'                   => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             Log::error('❌ Validación fallida:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
-                'status' => 422,
+                'status'  => 422,
                 'message' => 'Error de validación',
-                'data' => $validator->errors()
+                'data'    => $validator->errors(),
             ], 422);
         }
 
@@ -60,12 +65,12 @@ class MercadoPagoController extends Controller
         try {
             $customer = Customers::findOrFail($request->customer_id);
             Log::info('👤 Cliente encontrado:', [
-                'id' => $customer->id,
+                'id'     => $customer->id,
                 'nombre' => $customer->nombre,
-                'correo' => $customer->correo
+                'correo' => $customer->correo,
             ]);
 
-            $items = [];
+            $items    = [];
             $subtotal = 0;
 
             foreach ($request->productos as $index => $productoData) {
@@ -74,7 +79,7 @@ class MercadoPagoController extends Controller
                 $product = Product::findOrFail($productoData['product_id']);
                 Log::info("✅ Producto encontrado: {$product->nombre}, Precio: \${$product->precio}");
 
-                if (!$product->activo) {
+                if (! $product->activo) {
                     throw new \Exception("El producto {$product->nombre} no está disponible");
                 }
 
@@ -95,20 +100,20 @@ class MercadoPagoController extends Controller
                         throw new \Exception("Stock insuficiente para {$product->nombre}");
                     }
 
-                    $item = new Item();
-                    $item->id = strval($product->id);
-                    $item->title = $product->nombre;
+                    $item              = new Item();
+                    $item->id          = strval($product->id);
+                    $item->title       = $product->nombre;
                     $item->description = $product->descripcion ?? "Producto de carnicería";
                     $item->category_id = "food";
-                    $item->quantity = 1;
-                    $item->unit_price = floatval($montoPesos);
+                    $item->quantity    = 1;
+                    $item->unit_price  = floatval($montoPesos);
                     $item->currency_id = "MXN";
 
                     if ($product->imagen) {
                         $item->picture_url = url($product->imagen);
                     }
 
-                    $items[] = $item;
+                    $items[]  = $item;
                     $subtotal += $montoPesos;
 
                     Log::info("✅ Item PESOS creado: qty=1, price=\${$montoPesos}");
@@ -123,20 +128,20 @@ class MercadoPagoController extends Controller
 
                     $itemSubtotal = $precioUnitario * $cantidad;
 
-                    $item = new Item();
-                    $item->id = strval($product->id);
-                    $item->title = $product->nombre;
+                    $item              = new Item();
+                    $item->id          = strval($product->id);
+                    $item->title       = $product->nombre;
                     $item->description = $product->descripcion ?? "Producto de carnicería";
                     $item->category_id = "food";
-                    $item->quantity = intval($cantidad);
-                    $item->unit_price = floatval($precioUnitario);
+                    $item->quantity    = intval($cantidad);
+                    $item->unit_price  = floatval($precioUnitario);
                     $item->currency_id = "MXN";
 
                     if ($product->imagen) {
                         $item->picture_url = url($product->imagen);
                     }
 
-                    $items[] = $item;
+                    $items[]  = $item;
                     $subtotal += $itemSubtotal;
 
                     Log::info("✅ Item CANTIDAD creado: qty={$cantidad}, price=\${$precioUnitario}");
@@ -151,52 +156,52 @@ class MercadoPagoController extends Controller
 
             $descuento = floatval($request->descuento ?? 0);
             $impuestos = ($subtotal - $descuento) * 0.16;
-            $total = $subtotal - $descuento + $impuestos;
+            $total     = $subtotal - $descuento + $impuestos;
 
             Log::info("💳 Creando venta pendiente - Total: \${$total}");
 
             $ventaPendiente = Sale::create([
-                'customer_id' => $request->customer_id,
-                'fecha_venta' => now(),
-                'subtotal' => $subtotal,
-                'descuento' => $descuento,
-                'impuestos' => $impuestos,
-                'total' => $total,
-                'metodo_pago' => 'mercado_pago',
-                'estatus' => 'pendiente',
-                'notas' => $request->notas,
-                'estado_envio' => 'Pendiente'
+                'customer_id'  => $request->customer_id,
+                'fecha_venta'  => now(),
+                'subtotal'     => $subtotal,
+                'descuento'    => $descuento,
+                'impuestos'    => $impuestos,
+                'total'        => $total,
+                'metodo_pago'  => 'mercado_pago',
+                'estatus'      => 'pendiente',
+                'notas'        => $request->notas,
+                'estado_envio' => 'Pendiente',
             ]);
 
             Log::info("✅ Venta pendiente creada - ID: {$ventaPendiente->id}");
 
             // Crear preferencia de MercadoPago
-            $preference = new Preference();
+            $preference        = new Preference();
             $preference->items = $items;
 
             // Información del pagador
-            $payer = new Payer();
-            $payer->name = $customer->nombre;
+            $payer          = new Payer();
+            $payer->name    = $customer->nombre;
             $payer->surname = $customer->apellido ?? '';
-            $payer->email = $customer->correo;
+            $payer->email   = $customer->correo;
 
             Log::info("👤 Payer configurado:", [
-                'name' => $payer->name,
+                'name'    => $payer->name,
                 'surname' => $payer->surname,
-                'email' => $payer->email
+                'email'   => $payer->email,
             ]);
 
             if ($customer->telefono) {
                 $payer->phone = [
                     'area_code' => '',
-                    'number' => $customer->telefono
+                    'number'    => $customer->telefono,
                 ];
             }
 
             if ($customer->direccion) {
                 $payer->address = [
                     'street_name' => $customer->direccion,
-                    'zip_code' => $customer->codigo_postal ?? ''
+                    'zip_code'    => $customer->codigo_postal ?? '',
                 ];
             }
 
@@ -208,9 +213,9 @@ class MercadoPagoController extends Controller
 
             // Metadata
             $preference->external_reference = strval($ventaPendiente->id);
-            $preference->metadata = [
-                'venta_id' => $ventaPendiente->id,
-                'customer_id' => $customer->id
+            $preference->metadata           = [
+                'venta_id'    => $ventaPendiente->id,
+                'customer_id' => $customer->id,
             ];
 
             // Webhook - Comentado para desarrollo local
@@ -221,20 +226,20 @@ class MercadoPagoController extends Controller
 
             // Configuraciones adicionales
             $preference->statement_descriptor = "CARNICERIA";
-            $preference->expires = true;
+            $preference->expires              = true;
             $preference->expiration_date_from = now()->toIso8601String();
-            $preference->expiration_date_to = now()->addHours(24)->toIso8601String();
+            $preference->expiration_date_to   = now()->addHours(24)->toIso8601String();
 
             Log::info("💾 Guardando preferencia en MercadoPago...");
 
             // Guardar preferencia
-            $saved = $preference->save();
+            $saved  = $preference->save();
 
-            if (!$saved) {
+            if (! $saved) {
                 Log::error('❌ Error al guardar preferencia');
                 Log::error('Detalles:', [
-                    'error' => $preference->error ?? 'Sin información de error',
-                    'status' => $preference->status ?? 'Sin status'
+                    'error'  => $preference->error ?? 'Sin información de error',
+                    'status' => $preference->status ?? 'Sin status',
                 ]);
                 throw new \Exception('No se pudo crear la preferencia en MercadoPago');
             }
@@ -251,14 +256,14 @@ class MercadoPagoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'status' => 201,
+                'status'  => 201,
                 'message' => 'Preferencia creada exitosamente',
-                'data' => [
-                    'preference_id' => $preference->id,
-                    'init_point' => $preference->init_point,
+                'data'    => [
+                    'preference_id'      => $preference->id,
+                    'init_point'         => $preference->init_point,
                     'sandbox_init_point' => $preference->sandbox_init_point,
-                    'venta_pendiente_id' => $ventaPendiente->id
-                ]
+                    'venta_pendiente_id' => $ventaPendiente->id,
+                ],
             ], 201);
 
         } catch (\Exception $e) {
@@ -273,9 +278,9 @@ class MercadoPagoController extends Controller
 
             return response()->json([
                 'success' => false,
-                'status' => 500,
+                'status'  => 500,
                 'message' => 'Error al crear preferencia: ' . $e->getMessage(),
-                'data' => null
+                'data'    => null,
             ], 500);
         }
     }
@@ -296,7 +301,7 @@ class MercadoPagoController extends Controller
 
                 if ($payment) {
                     $ventaId = intval($payment->external_reference);
-                    $venta = Sale::find($ventaId);
+                    $venta   = Sale::find($ventaId);
 
                     if ($venta) {
                         Log::info("📦 Venta encontrada ID: {$ventaId}");
@@ -306,14 +311,14 @@ class MercadoPagoController extends Controller
                             $this->procesarPagoAprobado($venta, $payment);
                         } elseif ($payment->status === 'rejected') {
                             Log::info("❌ Pago RECHAZADO");
-                            $venta->estatus = 'cancelada';
+                            $venta->estatus                = 'cancelada';
                             $venta->mercadopago_payment_id = $paymentId;
-                            $venta->mercadopago_status = $payment->status;
+                            $venta->mercadopago_status     = $payment->status;
                             $venta->save();
                         } elseif ($payment->status === 'pending') {
                             Log::info("⏳ Pago PENDIENTE");
                             $venta->mercadopago_payment_id = $paymentId;
-                            $venta->mercadopago_status = $payment->status;
+                            $venta->mercadopago_status     = $payment->status;
                             $venta->save();
                         }
                     } else {
@@ -337,15 +342,15 @@ class MercadoPagoController extends Controller
         DB::beginTransaction();
 
         try {
-            $venta->estatus = 'completada';
+            $venta->estatus                = 'completada';
             $venta->mercadopago_payment_id = $payment->id;
-            $venta->mercadopago_status = $payment->status;
+            $venta->mercadopago_status     = $payment->status;
             $venta->save();
 
             $customer = Customers::find($venta->customer_id);
             if ($customer) {
-                $customer->total_compras = ($customer->total_compras ?? 0) + $venta->total;
-                $customer->numero_compras = ($customer->numero_compras ?? 0) + 1;
+                $customer->total_compras       = ($customer->total_compras ?? 0) + $venta->total;
+                $customer->numero_compras      = ($customer->numero_compras ?? 0) + 1;
                 $customer->fecha_ultima_compra = now();
                 $customer->save();
 
@@ -355,9 +360,9 @@ class MercadoPagoController extends Controller
             DB::commit();
 
             Log::info('✅ Pago procesado correctamente', [
-                'venta_id' => $venta->id,
+                'venta_id'   => $venta->id,
                 'payment_id' => $payment->id,
-                'total' => $venta->total
+                'total'      => $venta->total,
             ]);
 
         } catch (\Exception $e) {
@@ -372,27 +377,27 @@ class MercadoPagoController extends Controller
         try {
             $payment = \MercadoPago\Payment::find_by_id($paymentId);
 
-            if (!$payment) {
+            if (! $payment) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pago no encontrado'
+                    'message' => 'Pago no encontrado',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'status' => $payment->status,
-                    'status_detail' => $payment->status_detail,
-                    'payment_id' => $payment->id,
-                    'external_reference' => $payment->external_reference
-                ]
+                'data'    => [
+                    'status'             => $payment->status,
+                    'status_detail'      => $payment->status_detail,
+                    'payment_id'         => $payment->id,
+                    'external_reference' => $payment->external_reference,
+                ],
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al verificar pago: ' . $e->getMessage()
+                'message' => 'Error al verificar pago: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -405,22 +410,22 @@ class MercadoPagoController extends Controller
                 ->latest()
                 ->first();
 
-            if (!$venta) {
+            if (! $venta) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Venta no encontrada'
+                    'message' => 'Venta no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $venta
+                'data'    => $venta,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Error: ' . $e->getMessage(),
             ], 500);
         }
     }
