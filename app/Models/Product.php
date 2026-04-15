@@ -76,19 +76,35 @@ class Product extends Model
     // Accessor para obtener la URL completa de la imagen
     public function getImagenUrlAttribute()
     {
-        if ($this->imagen) {
-            // Si la imagen ya tiene la URL completa, retornarla
-            if (str_starts_with($this->imagen, 'http')) {
-                return $this->imagen;
-            }
-            // Si empieza con /, es una ruta relativa, agregar el dominio
-            if (str_starts_with($this->imagen, '/')) {
-                return url($this->imagen);
-            }
-            // Si es solo el nombre del archivo (compatibilidad hacia atrás)
-            return url('/productos/' . $this->imagen);
+        $defaultImageUrl = url('/productos/carne_default.png');
+
+        if (!$this->imagen) {
+            return $defaultImageUrl;
         }
-        return null;
+
+        $image = trim((string) $this->imagen);
+
+        // Si viene apuntando a localhost/127, forzar imagen por defecto.
+        if (str_contains($image, '127.0.0.1') || str_contains($image, 'localhost')) {
+            return $defaultImageUrl;
+        }
+
+        // Si ya es una URL remota valida (que no sea localhost), se respeta.
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+            return $image;
+        }
+
+        // Resolver ruta local relativa dentro de /public.
+        $relativePath = ltrim($image, '/');
+        if (!str_starts_with($relativePath, 'productos/')) {
+            $relativePath = 'productos/' . $relativePath;
+        }
+
+        if (file_exists(public_path($relativePath))) {
+            return url('/' . $relativePath);
+        }
+
+        return $defaultImageUrl;
     }
 
     // Accessor para verificar si hay stock disponible

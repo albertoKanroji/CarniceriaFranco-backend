@@ -54,13 +54,10 @@
                             @foreach ($data as $product)
                                 <tr>
                                     <td class="text-center">
-                                        @if($product->imagen)
-                                            <img src="{{ asset($product->imagen) }}"
-                                                 alt="{{ $product->nombre }}"
-                                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
-                                        @else
-                                            <i class="fas fa-box" style="font-size: 30px; color: #ccc;"></i>
-                                        @endif
+                                        <img src="{{ $product->imagen_url }}"
+                                             alt="{{ $product->nombre }}"
+                                             onerror="this.onerror=null;this.src='{{ asset('productos/carne_default.png') }}';"
+                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
                                     </td>
                                     <td class="text-center">
                                         <h6>{{ $product->codigo ?? 'N/A' }}</h6>
