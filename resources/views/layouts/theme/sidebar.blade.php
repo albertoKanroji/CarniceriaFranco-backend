@@ -3,7 +3,7 @@
     $menuItems = MenuConfig::getMenuItems();
 @endphp
 
-<div class="sidebar-wrapper sidebar-theme" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
+<div class="sidebar-wrapper sidebar-theme cf-sidebar-shell" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
     <nav id="compactSidebar" class="sliderbar">
         <ul class="menu-categories sliderbar">
             @foreach($menuItems as $menu)
@@ -50,6 +50,40 @@
 </div>
 
 <style>
+.cf-sidebar-shell {
+    z-index: 1030;
+}
+
+.cf-sidebar-shell #compactSidebar {
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.14) !important;
+}
+
+.cf-sidebar-shell #compact_submenuSidebar {
+    border-left: 1px solid rgba(148, 163, 184, 0.22);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1) !important;
+}
+
+.cf-sidebar-shell #compactSidebar .menu-categories > li.menu {
+    margin: 10px 8px;
+    border-radius: 12px;
+}
+
+.cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle {
+    height: 108px;
+}
+
+.cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle .base-icons {
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cf-sidebar-shell #compact_submenuSidebar .submenu ul.submenu-list li {
+    margin-bottom: 8px;
+}
+
 /* Efectos hover modernos */
 .sidebar-wrapper .menu-categories li:hover {
     transform: translateX(5px);
@@ -102,5 +136,34 @@
 
 .submenu-sidebar::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+@media (max-width: 991px) {
+    .sidebar-wrapper {
+        top: 74px !important;
+        height: calc(100vh - 74px) !important;
+        z-index: 1040 !important;
+    }
+
+    .sidebar-wrapper #compactSidebar,
+    .sidebar-wrapper #compact_submenuSidebar {
+        top: 74px !important;
+        height: calc(100vh - 74px) !important;
+    }
+
+    .sidebar-wrapper #compact_submenuSidebar.show {
+        left: 120px;
+    }
+}
+
+@media (max-width: 576px) {
+    .cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle {
+        height: 94px;
+    }
+
+    .cf-sidebar-shell #compact_submenuSidebar {
+        width: calc(100vw - 120px);
+        max-width: 260px;
+    }
 }
 </style>

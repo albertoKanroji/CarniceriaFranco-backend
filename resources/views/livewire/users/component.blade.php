@@ -36,7 +36,7 @@
                                 <td class="text-center"><h6>{{$r->phone}}</h6></td>
                                 <td class="text-center"><h6>{{$r->email}}</h6></td>
                                 <td class="text-center">
-                                    <span class="badge {{ $r->status == 'Active' ? 'badge-success' : 'badge-danger' }} text-uppercase">{{$r->status}}</span>
+                                    <span class="badge {{ strtoupper($r->status) == 'ACTIVE' ? 'badge-success' : 'badge-danger' }} text-uppercase">{{ strtoupper($r->status) == 'ACTIVE' ? 'ACTIVO' : 'BLOQUEADO' }}</span>
                                 </td>
                                 <td class="text-center text-uppercase">
                                     <h6>{{$r->profile}}</h6>
@@ -88,14 +88,49 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function(){
+        let isSavingUser = false
+
+        function getStoreButton() {
+            return document.querySelector('#theModal .js-btn-store')
+        }
+
+        function setStoreLoadingState() {
+            const btn = getStoreButton()
+            if (!btn) return
+
+            isSavingUser = true
+            btn.disabled = true
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> GUARDANDO...'
+        }
+
+        function restoreStoreButton() {
+            const btn = getStoreButton()
+            if (!btn) {
+                isSavingUser = false
+                return
+            }
+
+            btn.disabled = false
+            btn.innerHTML = '<span class="js-btn-store-label">GUARDAR</span>'
+            isSavingUser = false
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('#theModal .js-btn-store')
+            if (!btn) return
+            setStoreLoadingState()
+        })
+
         window.livewire.on('user-added', Msg => {
             $('#theModal').modal('hide')
             resetInputFile()
+            restoreStoreButton()
             noty(Msg)
         })
         window.livewire.on('user-updated', Msg => {
             $('#theModal').modal('hide')
             resetInputFile()
+            restoreStoreButton()
             noty(Msg)
         })
         window.livewire.on('user-deleted', Msg => {
@@ -103,13 +138,28 @@
         })
         window.livewire.on('hide-modal', Msg => {
             $('#theModal').modal('hide')
+            restoreStoreButton()
         })
         window.livewire.on('show-modal', Msg => {
             $('#theModal').modal('show')
+            restoreStoreButton()
         })
         window.livewire.on('user-withsales', Msg => {
             noty(Msg)
         })
+
+        if (window.livewire && typeof window.livewire.hook === 'function') {
+            window.livewire.hook('message.processed', () => {
+                if (!isSavingUser) return
+
+                const modalVisible = $('#theModal').hasClass('show')
+                const hasValidationErrors = document.querySelector('#theModal .text-danger.er') !== null
+
+                if (modalVisible && hasValidationErrors) {
+                    restoreStoreButton()
+                }
+            })
+        }
 
     })
 

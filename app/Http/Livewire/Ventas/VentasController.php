@@ -23,6 +23,10 @@ class VentasController extends Component
 
     protected $paginationTheme = 'bootstrap';
 
+    protected $listeners = [
+        'cancelSale' => 'cancelSale'
+    ];
+
     public function mount()
     {
         // Establecer fechas por defecto (último mes)
@@ -36,6 +40,26 @@ class VentasController extends Component
     }
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFiltroEstatus()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFiltroMetodoPago()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFechaInicio()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFechaFin()
     {
         $this->resetPage();
     }
@@ -105,46 +129,24 @@ class VentasController extends Component
 
     public function render()
     {
-        $query = Sale::with(['customer', 'details'])
-            ->orderBy('fecha_venta', 'desc');
-
-        // Filtro por búsqueda (folio o nombre de cliente)
-        if ($this->search) {
-            $query->where(function($q) {
-                $q->where('folio', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('customer', function($subQ) {
-                      $subQ->where('nombre', 'like', '%' . $this->search . '%')
-                           ->orWhere('apellido', 'like', '%' . $this->search . '%');
-                  });
-            });
-        }
-
-        // Filtro por estatus
-        if ($this->filtroEstatus) {
-            $query->where('estatus', $this->filtroEstatus);
-        }
-
-        // Filtro por método de pago
-        if ($this->filtroMetodoPago) {
-            $query->where('metodo_pago', $this->filtroMetodoPago);
-        }
-
-        // Filtro por rango de fechas
-        if ($this->fechaInicio && $this->fechaFin) {
-            $query->whereBetween('fecha_venta', [$this->fechaInicio . ' 00:00:00', $this->fechaFin . ' 23:59:59']);
-        }
+        $query = Sale::with(['customer', 'details'])->orderBy('fecha_venta', 'desc');
+        $query = $this->applyFilters($query);
 
         $ventas = $query->paginate(15);
 
         // Calcular totales
+        $totalesQuery = Sale::query();
+        $totalesQuery = $this->applyFilters($totalesQuery);
+
         $totales = [
-            'total_ventas' => Sale::whereBetween('fecha_venta', [$this->fechaInicio . ' 00:00:00', $this->fechaFin . ' 23:59:59'])
+            'total_ventas' => (clone $totalesQuery)
                 ->where('estatus', '!=', 'cancelada')
                 ->sum('total'),
-            'numero_ventas' => Sale::whereBetween('fecha_venta', [$this->fechaInicio . ' 00:00:00', $this->fechaFin . ' 23:59:59'])
+            'numero_ventas' => (clone $totalesQuery)
                 ->where('estatus', '!=', 'cancelada')
                 ->count(),
-            'ventas_hoy' => Sale::whereDate('fecha_venta', today())
+            'ventas_hoy' => (clone $totalesQuery)
+                ->whereDate('fecha_venta', today())
                 ->where('estatus', '!=', 'cancelada')
                 ->sum('total'),
         ];
@@ -154,5 +156,36 @@ class VentasController extends Component
             'totales' => $totales
         ])->extends('layouts.theme.app')
             ->section('content');
+    }
+
+    private function applyFilters($query)
+    {
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('folio', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('customer', function ($subQ) {
+                        $subQ->where('nombre', 'like', '%' . $this->search . '%')
+                            ->orWhere('apellido', 'like', '%' . $this->search . '%');
+                    });
+            });
+        }
+
+        if ($this->filtroEstatus) {
+            $query->where('estatus', $this->filtroEstatus);
+        }
+
+        if ($this->filtroMetodoPago) {
+            $query->where('metodo_pago', $this->filtroMetodoPago);
+        }
+
+        if ($this->fechaInicio && $this->fechaFin) {
+            $query->whereBetween('fecha_venta', [$this->fechaInicio . ' 00:00:00', $this->fechaFin . ' 23:59:59']);
+        } elseif ($this->fechaInicio) {
+            $query->where('fecha_venta', '>=', $this->fechaInicio . ' 00:00:00');
+        } elseif ($this->fechaFin) {
+            $query->where('fecha_venta', '<=', $this->fechaFin . ' 23:59:59');
+        }
+
+        return $query;
     }
 }

@@ -75,6 +75,7 @@ class ClientesController extends Component
         $this->apellido = '';
         $this->apellido2 = '';
         $this->correo = '';
+        $this->password = '';
         $this->telefono = '';
         $this->direccion = '';
         $this->ciudad = '';
@@ -170,6 +171,32 @@ class ClientesController extends Component
     {
         try {
             $user = Customers::find($this->selected_id);
+
+            $rules = [
+                'nombre' => 'required|min:3',
+                'apellido' => 'required|min:3',
+                'correo' => 'required|email|unique:customers,correo,' . $this->selected_id,
+                'telefono' => 'nullable|min:10',
+                'tipo_cliente' => 'required|in:minorista,mayorista,distribuidor',
+                'estatus' => 'required|in:activo,inactivo,suspendido',
+                'password' => 'nullable|min:6'
+            ];
+
+            $messages = [
+                'nombre.required' => 'Ingresa el nombre',
+                'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
+                'apellido.required' => 'Ingresa el apellido',
+                'apellido.min' => 'El apellido debe tener al menos 3 caracteres',
+                'correo.required' => 'Ingresa el correo',
+                'correo.email' => 'Ingresa un correo válido',
+                'correo.unique' => 'El email ya existe en el sistema',
+                'telefono.min' => 'El teléfono debe tener al menos 10 caracteres',
+                'tipo_cliente.required' => 'Selecciona el tipo de cliente',
+                'estatus.required' => 'Selecciona el estatus',
+                'password.min' => 'La contraseña debe tener al menos 6 caracteres'
+            ];
+
+            $this->validate($rules, $messages);
 
             $user->update([
                 'nombre' => $this->nombre,

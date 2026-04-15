@@ -23,6 +23,7 @@ class MercadoPagoController extends Controller
         Log::info('🔑 Access Token cargado:', [
             'token_prefix' => substr($accessToken, 0, 10),
             'is_test'      => strpos($accessToken, 'TEST-') === 0 ? 'SÍ ✅' : 'NO ❌ PRODUCCIÓN',
+            'environment'  => config('app.env'),
         ]);
 
         if (! $accessToken) {
@@ -179,16 +180,29 @@ class MercadoPagoController extends Controller
             $preference        = new Preference();
             $preference->items = $items;
 
-            // Información del pagador
+            // ✅ Información del pagador - CONDICIONAL POR AMBIENTE
             $payer          = new Payer();
             $payer->name    = $customer->nombre;
             $payer->surname = $customer->apellido ?? '';
-            $payer->email   = $customer->correo;
+
+            // SOLO en desarrollo local: omitir email para evitar verificación 2FA
+            // En producción: usar email real del cliente
+            $isLocal = in_array(config('app.env'), ['local', 'development', 'testing']);
+
+            if ($isLocal) {
+                // NO establecer email en desarrollo - evita verificación 2FA
+                Log::info("⚠️ Payer email OMITIDO (modo: " . config('app.env') . ")");
+            } else {
+                // En producción usar email real
+                $payer->email = $customer->correo;
+                Log::info("✉️ Payer email CONFIGURADO (producción): {$customer->correo}");
+            }
 
             Log::info("👤 Payer configurado:", [
-                'name'    => $payer->name,
-                'surname' => $payer->surname,
-                'email'   => $payer->email,
+                'name'        => $payer->name,
+                'surname'     => $payer->surname,
+                'email'       => $isLocal ? '🚫 OMITIDO (desarrollo)' : $customer->correo,
+                'environment' => config('app.env'),
             ]);
 
             if ($customer->telefono) {
@@ -207,10 +221,6 @@ class MercadoPagoController extends Controller
 
             $preference->payer = $payer;
 
-            // ✅ SOLUCIÓN DEFINITIVA: No usar back_urls ni auto_return
-            // MercadoPago redirige automáticamente después del pago
-            // Las URLs se configuran en el panel de MercadoPago
-
             // Metadata
             $preference->external_reference = strval($ventaPendiente->id);
             $preference->metadata           = [
@@ -218,11 +228,13 @@ class MercadoPagoController extends Controller
                 'customer_id' => $customer->id,
             ];
 
-            // Webhook - Comentado para desarrollo local
-            // En producción: usar ngrok o URL pública con HTTPS
-            // $preference->notification_url = url('/api/v1/mercadopago/webhook');
-
-            Log::info("⚠️ Webhook deshabilitado (desarrollo local)");
+            // Webhook - Solo en producción con HTTPS
+            if (!$isLocal && !empty(env('MERCADOPAGO_WEBHOOK_URL'))) {
+                $preference->notification_url = env('MERCADOPAGO_WEBHOOK_URL');
+                Log::info("🔔 Webhook habilitado: " . env('MERCADOPAGO_WEBHOOK_URL'));
+            } else {
+                Log::info("⚠️ Webhook deshabilitado (desarrollo local o sin URL configurada)");
+            }
 
             // Configuraciones adicionales
             $preference->statement_descriptor = "CARNICERIA";
@@ -233,7 +245,7 @@ class MercadoPagoController extends Controller
             Log::info("💾 Guardando preferencia en MercadoPago...");
 
             // Guardar preferencia
-            $saved  = $preference->save();
+            $saved = $preference->save();
 
             if (! $saved) {
                 Log::error('❌ Error al guardar preferencia');

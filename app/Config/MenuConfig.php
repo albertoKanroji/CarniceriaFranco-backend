@@ -4,9 +4,20 @@ namespace App\Config;
 
 class MenuConfig
 {
-    public static function getMenuItems()
+    public static function getAllowedRoutesByRole()
     {
         return [
+            'ADMIN' => ['*'],
+            'EMPLOYEE' => [
+                'ventas',
+                'despachos'
+            ]
+        ];
+    }
+
+    public static function getMenuItems()
+    {
+        $items = [
             [
                 'id' => 'dashboard',
                 'title' => 'Administración',
@@ -154,6 +165,57 @@ class MenuConfig
                 ]
             ]
         ];
+
+        return self::filterMenuItemsByRole($items, self::resolveCurrentRoleKey());
+    }
+
+    public static function getVisibleRoutesForCurrentUser()
+    {
+        $roleKey = self::resolveCurrentRoleKey();
+        $routes = self::getAllowedRoutesByRole()[$roleKey] ?? [];
+
+        return $routes;
+    }
+
+    private static function filterMenuItemsByRole($items, $roleKey)
+    {
+        $allowedRoutes = self::getAllowedRoutesByRole()[$roleKey] ?? [];
+
+        if (in_array('*', $allowedRoutes, true)) {
+            return $items;
+        }
+
+        $filteredItems = [];
+
+        foreach ($items as $item) {
+            $submenus = $item['submenu'] ?? [];
+            $submenus = array_values(array_filter($submenus, function ($submenu) use ($allowedRoutes) {
+                return in_array($submenu['url'], $allowedRoutes, true);
+            }));
+
+            if (!empty($submenus)) {
+                $item['submenu'] = $submenus;
+                $filteredItems[] = $item;
+            }
+        }
+
+        return $filteredItems;
+    }
+
+    private static function resolveCurrentRoleKey()
+    {
+        if (!auth()->check()) {
+            return 'EMPLOYEE';
+        }
+
+        $user = auth()->user();
+
+        $profile = strtoupper((string) ($user->profile ?? ''));
+        if (in_array($profile, ['ADMIN', 'EMPLOYEE'], true)) {
+            return $profile;
+        }
+
+        return 'EMPLOYEE';
     }
 
     public static function renderIcon($icon, $size = '22')

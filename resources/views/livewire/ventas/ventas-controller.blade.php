@@ -153,11 +153,18 @@
                                     <td class="text-center" style="padding: 15px; vertical-align: middle;">
                                         <button wire:click="viewDetail({{ $venta->id }})" class="btn mtmobile"
                                             title="Ver Detalle"
+                                            wire:loading.attr="disabled"
+                                            wire:target="viewDetail({{ $venta->id }})"
                                             style="background: linear-gradient(135deg, #C9A961 0%, #B8935A 100%); color: #2C2C2C; border: 2px solid #D4B570; padding: 8px 12px; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 12px rgba(201, 169, 97, 0.4); transition: all 0.3s; margin: 2px;">
-                                            <i class="fas fa-eye"></i>
+                                            <span wire:loading.remove wire:target="viewDetail({{ $venta->id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </span>
+                                            <span wire:loading wire:target="viewDetail({{ $venta->id }})">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                            </span>
                                         </button>
                                         @if($venta->estatus != 'cancelada')
-                                            <button onclick="confirmCancel({{ $venta->id }})"
+                                            <button onclick="confirmCancel({{ $venta->id }}, this)"
                                                 class="btn mtmobile" title="Cancelar"
                                                 style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%); color: #C9A961; border: 2px solid #8B7346; padding: 8px 12px; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 12px rgba(44, 44, 44, 0.4); transition: all 0.3s; margin: 2px;">
                                                 <i class="fas fa-ban"></i>
@@ -181,25 +188,31 @@
 </div>
 
 <script>
-    function confirmCancel(saleId) {
-        Swal.fire({
-            title: '¿Cancelar Venta?',
-            text: "Se devolverá el stock de los productos",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, cancelar',
-            cancelButtonText: 'No'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Livewire.emit('cancelSale', saleId);
-            }
-        })
+    let cancellingButton = null;
+
+    function setCancelButtonLoading(btn) {
+        if (!btn) return;
+        cancellingButton = btn;
+        btn.disabled = true;
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+
+    function resetCancelButtonLoading() {
+        if (!cancellingButton) return;
+        cancellingButton.disabled = false;
+        cancellingButton.innerHTML = cancellingButton.dataset.originalHtml || '<i class="fas fa-ban"></i>';
+        cancellingButton = null;
+    }
+
+    function confirmCancel(saleId, btn) {
+        setCancelButtonLoading(btn);
+        window.livewire.emit('cancelSale', saleId);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         window.livewire.on('sale-cancelled', msg => {
+            resetCancelButtonLoading();
             Swal.fire({
                 icon: 'success',
                 title: 'Éxito',
@@ -208,6 +221,7 @@
         });
 
         window.livewire.on('sale-error', msg => {
+            resetCancelButtonLoading();
             Swal.fire({
                 icon: 'error',
                 title: 'Error',

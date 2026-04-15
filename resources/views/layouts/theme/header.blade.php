@@ -1,153 +1,333 @@
-<div class="header-container fixed-top" style="box-shadow: 0 4px 20px rgba(0,0,0,0.08); backdrop-filter: blur(10px); background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);">
-    <header class="header navbar navbar-expand-sm" style="padding: 12px 20px;">
-        <ul class="navbar-item flex-row">
-            <li class="nav-item theme-logo">
-                <a href="{{url('home')}}" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 8px 12px; border-radius: 10px; box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                    </div>
-                    <b style="font-size: 22px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Carnicería Franco</b>
-                </a>
-            </li>
-        </ul>
+<div class="header-container fixed-top cf-header-shell">
+    <header class="header navbar navbar-expand-sm cf-header-navbar">
+        <div class="cf-header-left">
+            <a href="{{ url('home') }}" class="cf-logo-link">
+                <div class="cf-logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </div>
+                <span class="cf-logo-text">Carniceria Franco</span>
+            </a>
+        </div>
 
-        <a href="javascript:void(0);" class="sidebarCollapse" data-placement="bottom" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 10px 12px; border-radius: 10px; transition: all 0.3s ease; box-shadow: 0 3px 10px rgba(240, 147, 251, 0.3); border: none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                class="feather feather-list">
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3" y2="6"></line>
-                <line x1="3" y1="12" x2="3" y2="12"></line>
-                <line x1="3" y1="18" x2="3" y2="18"></line>
-            </svg>
-        </a>
+        <div class="cf-header-right">
+            <a href="javascript:void(0);" class="sidebarCollapse cf-menu-trigger" data-placement="bottom" aria-label="Abrir menu lateral">
+                <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3" y2="6"></line>
+                    <line x1="3" y1="12" x2="3" y2="12"></line>
+                    <line x1="3" y1="18" x2="3" y2="18"></line>
+                </svg>
+            </a>
 
+            <ul class="navbar-item flex-row navbar-dropdown cf-user-nav">
+                <li class="nav-item dropdown user-profile-dropdown order-lg-0 order-1">
+                    <a href="javascript:void(0);" class="nav-link dropdown-toggle user cf-user-pill" id="userProfileDropdown"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <div class="cf-user-avatar">
+                            <i class="far fa-user"></i>
+                        </div>
+                        <span class="cf-user-name">{{ Auth::user()->name ?? 'Usuario' }}</span>
+                    </a>
 
-
-
-        <ul class="navbar-item flex-row navbar-dropdown">
-            <li class="nav-item dropdown user-profile-dropdown order-lg-0 order-1">
-                <a href="javascript:void(0);" class="nav-link dropdown-toggle user" id="userProfileDropdown"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                    style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 10px 15px; border-radius: 50px; box-shadow: 0 3px 10px rgba(79, 172, 254, 0.3); transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
-                    <div style="background: rgba(255,255,255,0.3); padding: 6px; border-radius: 50%; backdrop-filter: blur(5px);">
-                        <i class="far fa-user" style="color: white; font-size: 16px;"></i>
-                    </div>
-                    <span style="color: white; font-weight: 600; font-size: 14px;">{{ Auth::user()->name ?? 'Usuario' }}</span>
-                </a>
-                <div class="dropdown-menu position-absolute animated fadeInUp"
-                     style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden; margin-top: 10px;">
-                    <div class="user-profile-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
-                        <div class="media mx-auto">
-                            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 50%; backdrop-filter: blur(10px); margin-right: 15px;">
-                                <i class="far fa-user" style="color: white; font-size: 24px;"></i>
-                            </div>
-                            <div class="media-body">
-                                <h5 style="color: white; font-weight: 700; margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">{{ Auth::user()->name ?? 'Luis Fax' }}</h5>
-                                <p style="color: rgba(255,255,255,0.9); margin-bottom: 0; font-size: 13px;">{{ Auth::user()->email ?? 'developer@example.com' }}</p>
+                    <div class="dropdown-menu position-absolute animated fadeInUp cf-user-dropdown">
+                        <div class="user-profile-section cf-user-top">
+                            <div class="media mx-auto align-items-center">
+                                <div class="cf-user-top-icon">
+                                    <i class="far fa-user"></i>
+                                </div>
+                                <div class="media-body">
+                                    <h5>{{ Auth::user()->name ?? 'Usuario' }}</h5>
+                                    <p>{{ Auth::user()->email ?? 'developer@example.com' }}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="dropdown-item" style="padding: 0; margin: 8px;">
-                        <a href="user_profile.html" style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 10px; transition: all 0.3s ease; text-decoration: none; background: transparent;">
-                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 8px; border-radius: 8px;">
-                                <i class="fas fa-user" style="color: white; font-size: 14px;"></i>
-                            </div>
-                            <span style="color: #3B3F5C; font-weight: 600; font-size: 14px;">Mi Perfil</span>
-                        </a>
-                    </div>
 
-                    <div style="border-top: 1px solid #f0f0f0; margin: 5px 15px;"></div>
+                        <div class="dropdown-item cf-dropdown-item">
+                            <a href="user_profile.html" class="cf-dropdown-link">
+                                <div class="cf-dropdown-link-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>Mi Perfil</span>
+                            </a>
+                        </div>
 
-                    <div class="dropdown-item" style="padding: 0; margin: 8px;">
-                        <a href="{{ route('logout') }}"
-                            onclick="event.preventDefault(); document.getElementById('logout-form').submit()"
-                            style="display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 10px; transition: all 0.3s ease; text-decoration: none; background: transparent;">
-                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 8px; border-radius: 8px;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-log-out">
-                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                    <polyline points="16 17 21 12 16 7"></polyline>
-                                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                                </svg>
-                            </div>
-                            <span style="color: #3B3F5C; font-weight: 600; font-size: 14px;">Cerrar Sesión</span>
-                        </a>
-                        <form action="{{ route('logout') }}" method="POST" id="logout-form">
-                            @csrf
-                        </form>
+                        <div class="cf-dropdown-separator"></div>
+
+                        <div class="dropdown-item cf-dropdown-item">
+                            <a href="{{ route('logout') }}"
+                                onclick="event.preventDefault(); document.getElementById('logout-form').submit()"
+                                class="cf-dropdown-link">
+                                <div class="cf-dropdown-link-icon danger">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round" class="feather feather-log-out">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                    </svg>
+                                </div>
+                                <span>Cerrar Sesion</span>
+                            </a>
+                            <form action="{{ route('logout') }}" method="POST" id="logout-form">
+                                @csrf
+                            </form>
+                        </div>
                     </div>
-                </div>
-            </li>
-        </ul>
+                </li>
+            </ul>
+        </div>
     </header>
 </div>
 
 <style>
-/* Hover effects para header */
-.sidebarCollapse:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(240, 147, 251, 0.5) !important;
+.cf-header-shell {
+    z-index: 1100;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
 }
 
-.user-profile-dropdown .nav-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(79, 172, 254, 0.5) !important;
+.cf-header-navbar {
+    min-height: 72px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
 }
 
-.dropdown-item a:hover {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
-    transform: translateX(5px);
+.cf-header-left,
+.cf-header-right {
+    display: flex;
+    align-items: center;
 }
 
-.theme-logo a:hover b {
-    transform: scale(1.05);
-    display: inline-block;
+.cf-header-right {
+    margin-left: auto;
+    gap: 10px;
 }
 
-/* Animación del logo */
-.theme-logo a div {
-    transition: all 0.3s ease;
+.cf-logo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
 }
 
-.theme-logo a:hover div {
-    transform: rotate(5deg) scale(1.1);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.5);
+.cf-logo-icon {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 6px 12px rgba(79, 70, 229, 0.24);
 }
 
-/* Mejoras del dropdown */
-.dropdown-menu {
-    animation: slideDown 0.3s ease-in-out;
+.cf-logo-text {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1;
+    color: #3730a3;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
+.cf-menu-trigger {
+    background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+    border-radius: 10px;
+    padding: 8px 11px;
+    box-shadow: 0 6px 12px rgba(249, 115, 22, 0.28);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.cf-menu-trigger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(249, 115, 22, 0.36);
+}
+
+.cf-user-nav {
+    margin: 0;
+}
+
+.cf-user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
+    box-shadow: 0 6px 12px rgba(2, 132, 199, 0.26);
+}
+
+.cf-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.24);
+    color: #fff;
+}
+
+.cf-user-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cf-user-dropdown {
+    min-width: 260px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+}
+
+.cf-user-top {
+    padding: 14px;
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+}
+
+.cf-user-top-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-size: 18px;
+}
+
+.cf-user-top h5 {
+    margin: 0;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.cf-user-top p {
+    margin: 3px 0 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+}
+
+.cf-dropdown-item {
+    padding: 0;
+    margin: 7px;
+}
+
+.cf-dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #334155;
+    font-weight: 600;
+    transition: transform .2s ease, background-color .2s ease;
+}
+
+.cf-dropdown-link:hover {
+    background: #f1f5f9;
+    transform: translateX(3px);
+}
+
+.cf-dropdown-link-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #5965f3 0%, #6f4db8 100%);
+    color: #fff;
+}
+
+.cf-dropdown-link-icon.danger {
+    background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
+}
+
+.cf-dropdown-separator {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 6px 14px;
+}
+
+@media (max-width: 991px) {
+    .cf-header-navbar {
+        padding: 9px 12px;
+        min-height: 74px;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    .cf-logo-text {
+        font-size: 18px;
+        max-width: 165px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cf-user-name {
+        max-width: 110px;
+    }
+
+    .cf-header-right {
+        gap: 8px;
+    }
+
+    .cf-user-pill {
+        padding: 7px 10px;
+    }
+
+    .cf-user-dropdown {
+        right: 0;
+        left: auto;
+        min-width: 245px;
     }
 }
 
-/* Efecto de pulso en el ícono de usuario */
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
+@media (max-width: 576px) {
+    .cf-header-navbar {
+        min-height: 70px;
+        padding: 8px 10px;
     }
-    50% {
-        transform: scale(1.05);
-    }
-}
 
-.user-profile-dropdown .nav-link div {
-    animation: pulse 2s infinite;
+    .cf-logo-text {
+        font-size: 15px;
+        max-width: 110px;
+    }
+
+    .cf-logo-icon {
+        padding: 7px 9px;
+    }
+
+    .cf-user-pill {
+        padding: 7px 9px;
+    }
+
+    .cf-user-name {
+        max-width: 85px;
+        font-size: 12px;
+    }
+
+    .cf-menu-trigger {
+        padding: 7px 9px;
+    }
 }
 </style>

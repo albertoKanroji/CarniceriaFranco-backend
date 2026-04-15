@@ -69,7 +69,7 @@ class UsersController extends Component
         $this->selected_id = $user->id;
         $this->name = $user->name;
         $this->phone = $user->phone;
-        $this->profile = $this->profile;
+        $this->profile = $user->getRoleNames()->first() ?? $user->profile;
         $this->status = $user->status;
         $this->email = $user->email;
         $this->password = '';
@@ -115,8 +115,8 @@ class UsersController extends Component
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'status' => $this->status,
-            'profile' => $this->profile,
+            'status' => $this->resolveStatusValue($this->status),
+            'profile' => $this->resolveProfileValue($this->profile),
             'password' => bcrypt($this->password)
         ]);
 
@@ -162,8 +162,8 @@ class UsersController extends Component
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'status' => $this->status,
-            'profile' => $this->profile,
+            'status' => $this->resolveStatusValue($this->status),
+            'profile' => $this->resolveProfileValue($this->profile),
             'password' => strlen($this->password) > 0 ? bcrypt($this->password) : $user->password
         ]);
 
@@ -197,5 +197,27 @@ class UsersController extends Component
             $this->resetUI();
             $this->emit('user-deleted', 'Usuario Eliminado');
         }
+    }
+
+    private function resolveProfileValue($profile)
+    {
+        $profileName = strtoupper(trim((string) $profile));
+
+        if (in_array($profileName, ['ADMIN', 'ADMINISTRADOR', 'ADMINISTRATOR'], true)) {
+            return 'ADMIN';
+        }
+
+        return 'EMPLOYEE';
+    }
+
+    private function resolveStatusValue($status)
+    {
+        $statusName = strtoupper(trim((string) $status));
+
+        if ($statusName === 'LOCKED' || $statusName === 'BLOQUEADO') {
+            return 'LOCKED';
+        }
+
+        return 'ACTIVE';
     }
 }

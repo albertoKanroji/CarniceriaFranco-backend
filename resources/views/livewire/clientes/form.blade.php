@@ -5,7 +5,7 @@
     <div class="col-sm-12">
         <h5 class="mb-3">Información Personal</h5>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Nombre <span class="text-danger">*</span></label>
             <input type="text" wire:model.lazy="nombre" class="form-control" placeholder="ej: Luis">
@@ -14,7 +14,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Apellido Paterno <span class="text-danger">*</span></label>
             <input type="text" wire:model.lazy="apellido" class="form-control" placeholder="ej: García">
@@ -23,7 +23,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Apellido Materno</label>
             <input type="text" wire:model.lazy="apellido2" class="form-control" placeholder="ej: López">
@@ -37,7 +37,7 @@
     <div class="col-sm-12">
         <h5 class="mb-3 mt-3">Información de Contacto</h5>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Email <span class="text-danger">*</span></label>
             <input type="email" wire:model.lazy="correo" class="form-control" placeholder="ej: cliente@correo.com">
@@ -46,7 +46,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Teléfono</label>
             <input type="text" wire:model.lazy="telefono" class="form-control" placeholder="ej: 5512345678">
@@ -55,7 +55,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Contraseña <span class="text-danger">*</span></label>
             <input type="password" wire:model.lazy="password" class="form-control" placeholder="Mínimo 6 caracteres">
@@ -78,7 +78,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Ciudad</label>
             <input type="text" wire:model.lazy="ciudad" class="form-control" placeholder="ej: Ciudad de México">
@@ -87,7 +87,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Estado</label>
             <input type="text" wire:model.lazy="estado" class="form-control" placeholder="ej: CDMX">
@@ -96,7 +96,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Código Postal</label>
             <input type="text" wire:model.lazy="codigo_postal" class="form-control" placeholder="ej: 12345">
@@ -110,7 +110,7 @@
     <div class="col-sm-12">
         <h5 class="mb-3 mt-3">Información Comercial</h5>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>RFC</label>
             <input type="text" wire:model.lazy="rfc" class="form-control" placeholder="ej: GALU800101XXX">
@@ -119,7 +119,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Tipo de Cliente <span class="text-danger">*</span></label>
             <select wire:model.lazy="tipo_cliente" class="form-control">
@@ -132,7 +132,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-4">
+    <div class="col-sm-12 col-md-6 col-lg-4">
         <div class="form-group">
             <label>Estatus <span class="text-danger">*</span></label>
             <select wire:model.lazy="estatus" class="form-control">
