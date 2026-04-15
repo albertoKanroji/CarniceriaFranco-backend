@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Customers;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -73,6 +74,7 @@ class MercadoPagoController extends Controller
 
             $items    = [];
             $subtotal = 0;
+            $detalles = [];
 
             foreach ($request->productos as $index => $productoData) {
                 Log::info("📦 Procesando producto #{$index}:", $productoData);
@@ -117,6 +119,18 @@ class MercadoPagoController extends Controller
                     $items[]  = $item;
                     $subtotal += $montoPesos;
 
+                    $detalles[] = [
+                        'product_id' => $product->id,
+                        'cantidad' => $cantidadEquivalente,
+                        'monto_pesos' => $montoPesos,
+                        'precio_unitario' => $product->precio,
+                        'precio_oferta' => $product->en_oferta ? $product->precio_oferta : null,
+                        'subtotal' => $montoPesos,
+                        'producto_nombre' => $product->nombre,
+                        'producto_codigo' => $product->codigo,
+                        'unidad_venta' => $product->unidad_venta,
+                    ];
+
                     Log::info("✅ Item PESOS creado: qty=1, price=\${$montoPesos}");
 
                 } else {
@@ -144,6 +158,18 @@ class MercadoPagoController extends Controller
 
                     $items[]  = $item;
                     $subtotal += $itemSubtotal;
+
+                    $detalles[] = [
+                        'product_id' => $product->id,
+                        'cantidad' => $cantidad,
+                        'monto_pesos' => null,
+                        'precio_unitario' => $product->precio,
+                        'precio_oferta' => $product->en_oferta ? $product->precio_oferta : null,
+                        'subtotal' => $itemSubtotal,
+                        'producto_nombre' => $product->nombre,
+                        'producto_codigo' => $product->codigo,
+                        'unidad_venta' => $product->unidad_venta,
+                    ];
 
                     Log::info("✅ Item CANTIDAD creado: qty={$cantidad}, price=\${$precioUnitario}");
                 }
@@ -173,6 +199,25 @@ class MercadoPagoController extends Controller
                 'notas'        => $request->notas,
                 'estado_envio' => 'Pendiente',
             ]);
+
+            // Guardar items de la compra aunque el pago aun este pendiente.
+            foreach ($detalles as $detalle) {
+                SaleDetail::create([
+                    'sale_id' => $ventaPendiente->id,
+                    'product_id' => $detalle['product_id'],
+                    'cantidad' => $detalle['cantidad'],
+                    'monto_pesos' => $detalle['monto_pesos'],
+                    'precio_unitario' => $detalle['precio_unitario'],
+                    'precio_oferta' => $detalle['precio_oferta'],
+                    'descuento' => 0,
+                    'subtotal' => $detalle['subtotal'],
+                    'total' => $detalle['subtotal'],
+                    'producto_nombre' => $detalle['producto_nombre'],
+                    'producto_codigo' => $detalle['producto_codigo'],
+                    'unidad_venta' => $detalle['unidad_venta'],
+                    'estado_despacho' => 0,
+                ]);
+            }
 
             Log::info("✅ Venta pendiente creada - ID: {$ventaPendiente->id}");
 
@@ -354,6 +399,30 @@ class MercadoPagoController extends Controller
         DB::beginTransaction();
 
         try {
+            // Evita procesar dos veces la misma venta por reintentos de webhook.
+            if ($venta->estatus === 'completada') {
+                Log::info("ℹ️ Venta {$venta->id} ya estaba completada, se omite reproceso");
+                DB::commit();
+                return;
+            }
+
+            $venta->loadMissing('details');
+
+            foreach ($venta->details as $detail) {
+                $product = Product::find($detail->product_id);
+
+                if (!$product) {
+                    throw new \Exception("Producto no encontrado para detalle {$detail->id}");
+                }
+
+                if ((float) $product->stock < (float) $detail->cantidad) {
+                    throw new \Exception("Stock insuficiente para {$product->nombre} al confirmar el pago");
+                }
+
+                $product->stock = (float) $product->stock - (float) $detail->cantidad;
+                $product->save();
+            }
+
             $venta->estatus                = 'completada';
             $venta->mercadopago_payment_id = $payment->id;
             $venta->mercadopago_status     = $payment->status;
