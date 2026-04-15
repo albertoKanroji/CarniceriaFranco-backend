@@ -148,8 +148,10 @@ class MercadoPagoController extends Controller
                     $item->title       = $product->nombre;
                     $item->description = $product->descripcion ?? "Producto de carnicería";
                     $item->category_id = "food";
-                    $item->quantity    = intval($cantidad);
-                    $item->unit_price  = floatval($precioUnitario);
+                    // MercadoPago requiere quantity entero > 0.
+                    // Para cantidades decimales (kg, gramos, etc.), consolidamos el total del renglon en una sola unidad.
+                    $item->quantity    = 1;
+                    $item->unit_price  = round((float) $itemSubtotal, 2);
                     $item->currency_id = "MXN";
 
                     if ($product->imagen) {
@@ -171,7 +173,7 @@ class MercadoPagoController extends Controller
                         'unidad_venta' => $product->unidad_venta,
                     ];
 
-                    Log::info("✅ Item CANTIDAD creado: qty={$cantidad}, price=\${$precioUnitario}");
+                    Log::info("✅ Item CANTIDAD creado para MP: qty=1, row_total=\${$itemSubtotal}");
                 }
             }
 
