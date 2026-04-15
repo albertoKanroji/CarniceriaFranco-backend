@@ -7,19 +7,46 @@
                 </h4>
             </div>
 
-            <div class="row justify-content-between">
-                <div class="col-lg-6 col-md-6 col-sm-12">
-                    <div class="input-group mb-4">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text input-gp">
-                                <i class="fas fa-search"></i>
-                            </span>
+            <div class="row justify-content-between align-items-start">
+                <div class="col-lg-9 col-md-12 col-sm-12">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <label class="text-muted" style="font-size: 12px;">Folio</label>
+                            <input type="text" wire:model="filtroFolio" placeholder="Buscar folio..." class="form-control">
                         </div>
-                        <input type="text" wire:model="search" placeholder="Buscar por folio o cliente..." class="form-control">
+                        <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+                            <label class="text-muted" style="font-size: 12px;">Cliente</label>
+                            <input type="text" wire:model="filtroCliente" placeholder="Buscar cliente..." class="form-control">
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <label class="text-muted" style="font-size: 12px;">Estado</label>
+                            <select wire:model="filtroEstado" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Procesando">Procesando</option>
+                                <option value="Listo_para_enviar">Listo para enviar</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-6 col-sm-12 mb-3 d-flex align-items-end">
+                            <button wire:click="clearFilters" class="btn btn-dark btn-block">
+                                <i class="fas fa-redo"></i> Limpiar
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-6 col-sm-12">
-                    <div class="d-flex justify-content-end align-items-center">
+                <div class="col-lg-3 col-md-12 col-sm-12">
+                    <div class="d-flex justify-content-end align-items-center flex-wrap">
+                        <button class="btn btn-success mr-2 mb-2"
+                                wire:click="openCreateOrderModal"
+                                wire:loading.attr="disabled"
+                                wire:target="openCreateOrderModal">
+                            <span wire:loading.remove wire:target="openCreateOrderModal">
+                                <i class="fas fa-cart-plus"></i> Crear pedido
+                            </span>
+                            <span wire:loading wire:target="openCreateOrderModal">
+                                <i class="fas fa-spinner fa-spin"></i> Abriendo...
+                            </span>
+                        </button>
                         <span class="badge badge-warning" style="font-size: 12px; margin-right: 10px;">
                             <i class="fas fa-exclamation-triangle"></i> Urgente: +3 horas
                         </span>
@@ -97,8 +124,15 @@
                                     </td>
                                     <td class="text-center">
                                         <a href="javascript:void(0)" wire:click="openModal({{ $venta->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:target="openModal({{ $venta->id }})"
                                             class="btn btn-primary btn-rounded mb-2" title="Gestionar Despacho">
-                                            <i class="fas fa-boxes"></i>
+                                            <span wire:loading.remove wire:target="openModal({{ $venta->id }})">
+                                                <i class="fas fa-boxes"></i>
+                                            </span>
+                                            <span wire:loading wire:target="openModal({{ $venta->id }})">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                            </span>
                                         </a>
                                     </td>
                                 </tr>
@@ -117,6 +151,7 @@
         </div>
     </div>
     @include('livewire.despachos.modal')
+    @include('livewire.despachos.create-order-modal')
 </div>
 
 <style>
@@ -124,22 +159,22 @@
         0%, 50% { background-color: #f8d7da; }
         51%, 100% { background-color: #ffffff; }
     }
-    
+
     .table-success {
         background-color: #d4edda !important;
     }
-    
+
     .custom-switch .custom-control-label::before {
         width: 2.25rem;
         height: 1.25rem;
         background-color: #adb5bd;
         border: none;
     }
-    
+
     .custom-switch .custom-control-input:checked ~ .custom-control-label::before {
         background-color: #28a745;
     }
-    
+
     .custom-switch .custom-control-label::after {
         width: 1rem;
         height: 1rem;
@@ -172,6 +207,19 @@
 
         window.livewire.on('hide-modal', function() {
             $('#theModal').modal('hide');
+        });
+
+        window.livewire.on('show-create-order-modal', function() {
+            $('#createOrderModal').modal('show');
+        });
+
+        window.livewire.on('hide-create-order-modal', function() {
+            $('#createOrderModal').modal('hide');
+        });
+
+        window.livewire.on('pedido-creado', Msg => {
+            $('#createOrderModal').modal('hide');
+            noty(Msg, 1);
         });
     });
 

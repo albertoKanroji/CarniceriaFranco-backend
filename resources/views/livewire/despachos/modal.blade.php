@@ -1,4 +1,4 @@
-<div wire:ignore.self class="modal fade" id="theModal" tabindex="-1" role="dialog" style="backdrop-filter: blur(10px);">
+<div wire:ignore.self class="modal fade" id="theModal" tabindex="-1" role="dialog" style="backdrop-filter: blur(10px); z-index: 1200;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-dark">
@@ -68,12 +68,12 @@
                                 <table class="table table-bordered table-striped">
                                     <thead style="background: #3B3F5C">
                                         <tr>
-                                            <th class="table-th text-center text-white">ESTADO</th>
-                                            <th class="table-th text-center text-white">PRODUCTO</th>
-                                            <th class="table-th text-center text-white">CANTIDAD</th>
-                                            <th class="table-th text-center text-white">PRECIO</th>
-                                            <th class="table-th text-center text-white">SUBTOTAL</th>
-                                            <th class="table-th text-center text-white">DESPACHAR</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">ESTADO</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">PRODUCTO</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">CANTIDAD</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">PRECIO</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">SUBTOTAL</th>
+                                            <th class="text-center" style="color: #fff; font-weight: 700; letter-spacing: .4px;">DESPACHAR</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -111,17 +111,23 @@
                                                     <h6><strong>${{ number_format($detail['total'], 2) }}</strong></h6>
                                                 </td>
                                                 <td class="text-center">
-                                                    <div class="custom-control custom-switch custom-control-lg">
+                                                    <div class="custom-control custom-switch custom-control-lg despacho-switch-wrapper">
                                                         <input type="checkbox"
                                                                class="custom-control-input"
                                                                id="switch{{ $detail['id'] }}"
                                                                {{ $detail['estado_despacho'] ? 'checked' : '' }}
+                                                               {{ $updatingDetailId == $detail['id'] ? 'disabled' : '' }}
                                                                wire:click="toggleProductDespacho({{ $detail['id'] }})">
                                                         <label class="custom-control-label" for="switch{{ $detail['id'] }}">
                                                             <span class="{{ $detail['estado_despacho'] ? 'text-success' : 'text-muted' }}">
                                                                 {{ $detail['estado_despacho'] ? 'Despachado' : 'Pendiente' }}
                                                             </span>
                                                         </label>
+                                                        @if($updatingDetailId == $detail['id'])
+                                                        <small class="text-primary d-block mt-1">
+                                                            <i class="fas fa-spinner fa-spin"></i> Actualizando...
+                                                        </small>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>
@@ -138,13 +144,68 @@
                             <div class="col-sm-12">
                                 <div class="alert alert-success text-center mt-3">
                                     <h6><i class="fas fa-check-circle"></i> ¡Todos los productos han sido despachados!</h6>
-                                    <button class="btn btn-success btn-lg" wire:click="enviarPedido">
-                                        <i class="fas fa-shipping-fast"></i> ENVIAR PEDIDO
+                                    <button class="btn btn-success btn-lg"
+                                            wire:click="enviarPedido"
+                                            wire:loading.attr="disabled"
+                                            wire:target="enviarPedido">
+                                        <span wire:loading.remove wire:target="enviarPedido">
+                                            <i class="fas fa-shipping-fast"></i> ENVIAR PEDIDO
+                                        </span>
+                                        <span wire:loading wire:target="enviarPedido">
+                                            <i class="fas fa-spinner fa-spin"></i> ENVIANDO...
+                                        </span>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     @endif
+
+                        <style>
+                            #theModal {
+                                z-index: 1200 !important;
+                            }
+
+                            .modal-backdrop.show {
+                                z-index: 1190 !important;
+                            }
+
+                            .despacho-switch-wrapper {
+                                display: inline-flex;
+                                flex-direction: column;
+                                align-items: flex-start;
+                            }
+
+                            .despacho-switch-wrapper .custom-control-label {
+                                padding-left: 8px;
+                                font-weight: 600;
+                                min-height: 1.4rem;
+                                line-height: 1.4rem;
+                            }
+
+                            .despacho-switch-wrapper .custom-control-label::before {
+                                width: 2.6rem;
+                                height: 1.4rem;
+                                top: 0;
+                                border-radius: 1rem;
+                                background-color: #adb5bd;
+                                border: none;
+                                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+                            }
+
+                            .despacho-switch-wrapper .custom-control-label::after {
+                                width: 1.1rem;
+                                height: 1.1rem;
+                                top: 0.15rem;
+                                left: -2.43rem;
+                                border-radius: 50%;
+                                background: #ffffff;
+                                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+                            }
+
+                            .despacho-switch-wrapper .custom-control-input:checked ~ .custom-control-label::before {
+                                background-color: #28a745;
+                            }
+                        </style>
                 @else
                     <div class="text-center text-muted">
                         <h5>No hay productos para mostrar</h5>

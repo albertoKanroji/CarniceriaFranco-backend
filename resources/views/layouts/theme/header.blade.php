@@ -1,154 +1,148 @@
 <div class="header-container fixed-top cf-header-shell">
-    <header class="header navbar navbar-expand-sm cf-header-navbar">
-        <div class="cf-header-left">
-            <a href="{{ url('home') }}" class="cf-logo-link">
-                <div class="cf-logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    <header class="header navbar navbar-expand-sm" id="header">
+        <ul class="navbar-item flex-row cf-header-left">
+            <li class="nav-item theme-logo cf-theme-logo">
+                <a href="{{ url('home') }}" class="cf-logo-link" aria-label="Ir al inicio">
+                    <span class="cf-logo-mark">
+                        <i class="fas fa-store"></i>
+                    </span>
+                </a>
+
+                <a href="javascript:void(0);" class="sidebarCollapse cf-menu-trigger" data-placement="bottom" aria-label="Abrir menu lateral">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="feather feather-list">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3" y2="6"></line>
+                        <line x1="3" y1="12" x2="3" y2="12"></line>
+                        <line x1="3" y1="18" x2="3" y2="18"></line>
                     </svg>
+                </a>
+
+                <span class="cf-company-text">CARNICERIA FRANCO</span>
+
+                <div wire:offline class="alert alert-danger text-center cf-offline-alert mb-0">
+                    <strong>Sin conexion.</strong>
                 </div>
-                <span class="cf-logo-text">Carniceria Franco</span>
-            </a>
-        </div>
+            </li>
+        </ul>
 
-        <div class="cf-header-right">
-            <a href="javascript:void(0);" class="sidebarCollapse cf-menu-trigger" data-placement="bottom" aria-label="Abrir menu lateral">
-                <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list">
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3" y2="6"></line>
-                    <line x1="3" y1="12" x2="3" y2="12"></line>
-                    <line x1="3" y1="18" x2="3" y2="18"></line>
-                </svg>
-            </a>
+        <ul class="navbar-item flex-row navbar-dropdown cf-user-nav">
+            <li class="nav-item dropdown user-profile-dropdown order-lg-0 order-1">
+                <a href="javascript:void(0);" class="nav-link dropdown-toggle user cf-user-pill"
+                    id="userProfileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="far fa-user"></i>
+                    <span class="cf-user-name">{{ Auth::user()->name ?? 'Usuario' }}</span>
+                </a>
 
-            <ul class="navbar-item flex-row navbar-dropdown cf-user-nav">
-                <li class="nav-item dropdown user-profile-dropdown order-lg-0 order-1">
-                    <a href="javascript:void(0);" class="nav-link dropdown-toggle user cf-user-pill" id="userProfileDropdown"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <div class="cf-user-avatar">
-                            <i class="far fa-user"></i>
-                        </div>
-                        <span class="cf-user-name">{{ Auth::user()->name ?? 'Usuario' }}</span>
+                <div class="dropdown-menu position-absolute animated fadeInUp cf-user-dropdown" aria-labelledby="userProfileDropdown">
+                    <div class="cf-user-top">
+                        <h6>{{ Auth::user()->name ?? 'Usuario' }}</h6>
+                        <p>{{ Auth::user()->profile ?? 'Perfil' }}</p>
+                    </div>
+
+                    <a href="user_profile.html" class="dropdown-item cf-dropdown-link">
+                        <i class="fas fa-user"></i>
+                        <span>Mi Perfil</span>
                     </a>
 
-                    <div class="dropdown-menu position-absolute animated fadeInUp cf-user-dropdown">
-                        <div class="user-profile-section cf-user-top">
-                            <div class="media mx-auto align-items-center">
-                                <div class="cf-user-top-icon">
-                                    <i class="far fa-user"></i>
-                                </div>
-                                <div class="media-body">
-                                    <h5>{{ Auth::user()->name ?? 'Usuario' }}</h5>
-                                    <p>{{ Auth::user()->email ?? 'developer@example.com' }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dropdown-item cf-dropdown-item">
-                            <a href="user_profile.html" class="cf-dropdown-link">
-                                <div class="cf-dropdown-link-icon">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <span>Mi Perfil</span>
-                            </a>
-                        </div>
-
-                        <div class="cf-dropdown-separator"></div>
-
-                        <div class="dropdown-item cf-dropdown-item">
-                            <a href="{{ route('logout') }}"
-                                onclick="event.preventDefault(); document.getElementById('logout-form').submit()"
-                                class="cf-dropdown-link">
-                                <div class="cf-dropdown-link-icon danger">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round" class="feather feather-log-out">
-                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                        <polyline points="16 17 21 12 16 7"></polyline>
-                                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                                    </svg>
-                                </div>
-                                <span>Cerrar Sesion</span>
-                            </a>
-                            <form action="{{ route('logout') }}" method="POST" id="logout-form">
-                                @csrf
-                            </form>
-                        </div>
+                    <div class="dropdown-item p-0">
+                        <form action="{{ route('logout') }}" method="POST" class="m-0">
+                            @csrf
+                            <button type="submit" class="cf-logout-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Cerrar sesion</span>
+                            </button>
+                        </form>
                     </div>
-                </li>
-            </ul>
-        </div>
+                </div>
+            </li>
+        </ul>
     </header>
 </div>
 
 <style>
 .cf-header-shell {
     z-index: 1100;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    background: #f8fafc;
+    border-bottom: 1px solid #dbe1e8;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
 }
 
-.cf-header-navbar {
+#header {
     min-height: 72px;
-    padding: 10px 18px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+    background: transparent;
 }
 
-.cf-header-left,
-.cf-header-right {
+.cf-header-left {
+    margin: 0;
+    min-width: 0;
+}
+
+.cf-theme-logo {
+    margin: 0 !important;
     display: flex;
     align-items: center;
-}
-
-.cf-header-right {
-    margin-left: auto;
     gap: 10px;
+    min-width: 0;
 }
 
 .cf-logo-link {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
     text-decoration: none;
 }
 
-.cf-logo-icon {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    border-radius: 10px;
-    padding: 8px 10px;
-    box-shadow: 0 6px 12px rgba(79, 70, 229, 0.24);
-}
-
-.cf-logo-text {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-    line-height: 1;
-    color: #3730a3;
-}
-
-.cf-menu-trigger {
-    background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
-    border-radius: 10px;
-    padding: 8px 11px;
-    box-shadow: 0 6px 12px rgba(249, 115, 22, 0.28);
+.cf-logo-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform .2s ease, box-shadow .2s ease;
+    background: #1f2937;
+    color: #f8fafc;
+}
+
+.cf-menu-trigger {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #111827 !important;
+    background: #eef2f7;
+    border: 1px solid #d1d9e2;
+    transition: all .2s ease;
 }
 
 .cf-menu-trigger:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(249, 115, 22, 0.36);
+    background: #e2e8f0;
+}
+
+.cf-company-text {
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 62vw;
+}
+
+.cf-offline-alert {
+    margin-left: 8px;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 6px;
 }
 
 .cf-user-nav {
@@ -158,176 +152,116 @@
 .cf-user-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 11px;
+    gap: 7px;
+    color: #111827 !important;
+    padding: 6px 10px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
-    box-shadow: 0 6px 12px rgba(2, 132, 199, 0.26);
-}
-
-.cf-user-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.24);
-    color: #fff;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
 }
 
 .cf-user-name {
-    color: #fff;
     font-size: 13px;
     font-weight: 600;
-    max-width: 140px;
+    max-width: 130px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .cf-user-dropdown {
-    min-width: 260px;
+    min-width: 240px;
     margin-top: 10px;
-    border: 0;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+    padding: 6px;
 }
 
 .cf-user-top {
-    padding: 14px;
-    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    padding: 10px 12px;
+    border-bottom: 1px solid #eceff3;
+    margin-bottom: 4px;
 }
 
-.cf-user-top-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    margin-right: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    font-size: 18px;
-}
-
-.cf-user-top h5 {
+.cf-user-top h6 {
     margin: 0;
-    color: #fff;
-    font-size: 15px;
+    color: #111827;
+    font-size: 14px;
     font-weight: 700;
 }
 
 .cf-user-top p {
-    margin: 3px 0 0;
-    color: rgba(255, 255, 255, 0.9);
+    margin: 2px 0 0;
+    color: #6b7280;
     font-size: 12px;
-}
-
-.cf-dropdown-item {
-    padding: 0;
-    margin: 7px;
 }
 
 .cf-dropdown-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 11px;
-    border-radius: 10px;
-    text-decoration: none;
-    color: #334155;
+    gap: 8px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 600;
-    transition: transform .2s ease, background-color .2s ease;
+    color: #374151;
 }
 
 .cf-dropdown-link:hover {
-    background: #f1f5f9;
-    transform: translateX(3px);
+    background: #f3f4f6;
 }
 
-.cf-dropdown-link-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: inline-flex;
+.cf-logout-btn {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #5965f3 0%, #6f4db8 100%);
-    color: #fff;
+    gap: 8px;
+    padding: 8px 12px;
+    color: #b91c1c;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.cf-dropdown-link-icon.danger {
-    background: linear-gradient(135deg, #f472b6 0%, #fb7185 100%);
-}
-
-.cf-dropdown-separator {
-    height: 1px;
-    background: #e2e8f0;
-    margin: 6px 14px;
+.cf-logout-btn:hover {
+    background: #fef2f2;
 }
 
 @media (max-width: 991px) {
-    .cf-header-navbar {
-        padding: 9px 12px;
-        min-height: 74px;
-    }
-
-    .cf-logo-text {
-        font-size: 18px;
-        max-width: 165px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .cf-user-name {
-        max-width: 110px;
-    }
-
-    .cf-header-right {
-        gap: 8px;
-    }
-
-    .cf-user-pill {
-        padding: 7px 10px;
-    }
-
-    .cf-user-dropdown {
-        right: 0;
-        left: auto;
-        min-width: 245px;
-    }
-}
-
-@media (max-width: 576px) {
-    .cf-header-navbar {
-        min-height: 70px;
+    #header {
+        min-height: 68px;
         padding: 8px 10px;
     }
 
-    .cf-logo-text {
+    .cf-company-text {
         font-size: 15px;
-        max-width: 110px;
-    }
-
-    .cf-logo-icon {
-        padding: 7px 9px;
-    }
-
-    .cf-user-pill {
-        padding: 7px 9px;
+        max-width: 46vw;
     }
 
     .cf-user-name {
         max-width: 85px;
-        font-size: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .cf-company-text {
+        font-size: 14px;
+        max-width: 38vw;
     }
 
-    .cf-menu-trigger {
-        padding: 7px 9px;
+    .cf-user-name {
+        display: none;
+    }
+
+    .cf-user-pill {
+        padding: 6px 8px;
+    }
+
+    .cf-offline-alert {
+        display: none;
     }
 }
 </style>

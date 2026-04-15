@@ -72,6 +72,23 @@
     height: 108px;
 }
 
+.cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle > .base-menu {
+    width: 100%;
+    overflow: visible;
+}
+
+.cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle > .base-menu span {
+    display: block;
+    max-width: 122px;
+    margin: 8px auto 0;
+    line-height: 1.15;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset;
+    word-break: break-word;
+    font-size: 12px;
+}
+
 .cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle .base-icons {
     width: 56px;
     height: 56px;
@@ -159,6 +176,12 @@
 @media (max-width: 576px) {
     .cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle {
         height: 94px;
+    }
+
+    .cf-sidebar-shell #compactSidebar .menu-categories a.menu-toggle > .base-menu span {
+        max-width: 88px;
+        font-size: 11px;
+        line-height: 1.1;
     }
 
     .cf-sidebar-shell #compact_submenuSidebar {
