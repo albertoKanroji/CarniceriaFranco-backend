@@ -39,7 +39,33 @@ class MercadoPagoController extends Controller
         Log::info('═══════════════════════════════════════');
         Log::info('🚀 INICIANDO CREACIÓN DE PREFERENCIA MP');
         Log::info('═══════════════════════════════════════');
-        Log::info('📦 Datos recibidos:', $request->all());
+
+        // Normalizar payload para soportar distintos nombres de llaves desde frontend.
+        $payload = $request->all();
+        if (isset($payload['productos']) && is_array($payload['productos'])) {
+            $payload['productos'] = array_map(function ($item) {
+                $item = is_array($item) ? $item : [];
+
+                if (!isset($item['product_id'])) {
+                    $item['product_id'] = $item['id']
+                        ?? $item['productId']
+                        ?? $item['producto_id']
+                        ?? null;
+                }
+
+                if (!isset($item['cantidad'])) {
+                    $item['cantidad'] = $item['qty']
+                        ?? $item['quantity']
+                        ?? 1;
+                }
+
+                return $item;
+            }, $payload['productos']);
+        }
+
+        $request->replace($payload);
+
+        Log::info('📦 Datos recibidos (normalizados):', $request->all());
 
         $validator = Validator::make($request->all(), [
             'customer_id'             => 'required|exists:customers,id',
