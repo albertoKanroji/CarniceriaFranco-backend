@@ -5,12 +5,7 @@
                 <h4 class="card-title" style="color: #C9A961; font-weight: 800; font-size: 24px; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
                     {{ $componentName }} | <span style="background: rgba(201, 169, 97, 0.2); padding: 5px 12px; border-radius: 15px; border: 2px solid #C9A961;">{{ $ventas->total() }}</span>
                 </h4>
-                <ul class="tabs tab-pills">
-                    <li>
-                        <a href="javascript:void(0)" class="tabmenu" data-toggle="modal"
-                            data-target="#theModal" style="background: linear-gradient(135deg, #C9A961 0%, #B8935A 100%); color: #2C2C2C; padding: 10px 24px; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 15px rgba(201, 169, 97, 0.5); transition: all 0.3s; border: 2px solid #D4B570;">Agregar</a>
-                    </li>
-                </ul>
+
             </div>
 
             <!-- Estadísticas -->
