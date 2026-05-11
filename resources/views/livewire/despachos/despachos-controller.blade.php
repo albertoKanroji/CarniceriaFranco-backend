@@ -221,6 +221,12 @@
             $('#createOrderModal').modal('hide');
             noty(Msg, 1);
         });
+
+        $(document).on('hidden.bs.modal', '#createOrderModal', function () {
+            window.livewire.emit('createOrderModalClosed');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        });
     });
 
     function noty(msg, type = 1) {

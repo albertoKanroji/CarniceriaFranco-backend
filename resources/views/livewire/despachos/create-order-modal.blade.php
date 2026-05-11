@@ -5,7 +5,7 @@
                 <h5 class="modal-title">
                     <b>{{ $componentName }}</b> | Crear pedido
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" wire:click="closeCreateOrderModal">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" wire:click="requestCloseCreateOrderModal">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -205,7 +205,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-dark" data-dismiss="modal" wire:click="closeCreateOrderModal">Cerrar</button>
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" wire:click="requestCloseCreateOrderModal">Cerrar</button>
                 <button type="button"
                         class="btn btn-success"
                         wire:click="createOrder"

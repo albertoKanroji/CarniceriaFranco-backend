@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Clientes;
 
 use Livewire\Component;
 use App\Models\Customers;
+use App\Models\Sale;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
@@ -235,11 +236,18 @@ class ClientesController extends Component
     public function destroy(Customers $user)
     {
         try {
-            $user->estatus = 'inactivo';
-            $user->save();
+            $hasSales = Sale::where('customer_id', $user->id)->exists();
+
+            if ($hasSales) {
+                $user->estatus = 'inactivo';
+                $user->save();
+                $this->emit('user-deleted', 'Cliente inactivado (tiene ventas relacionadas)');
+            } else {
+                $user->delete();
+                $this->emit('user-deleted', 'Cliente eliminado correctamente');
+            }
 
             $this->resetUI();
-            $this->emit('global-msg', 'Cliente desactivado con éxito');
         } catch (\Exception $e) {
             $this->emit('global-msg', 'Error al desactivar el cliente: ' . $e->getMessage());
         }

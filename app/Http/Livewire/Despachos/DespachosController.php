@@ -38,7 +38,8 @@ class DespachosController extends Component
     protected $listeners = [
         'refreshDespachos' => '$refresh',
         'closeModal' => 'closeModal',
-        'closeCreateOrderModal' => 'closeCreateOrderModal'
+        'closeCreateOrderModal' => 'closeCreateOrderModal',
+        'createOrderModalClosed' => 'closeCreateOrderModal'
     ];
 
     public function mount()
@@ -90,6 +91,11 @@ class DespachosController extends Component
     public function closeCreateOrderModal()
     {
         $this->resetCreateOrderForm();
+    }
+
+    public function requestCloseCreateOrderModal()
+    {
+        $this->emit('hide-create-order-modal');
     }
 
     public function addProductToCart($productId)

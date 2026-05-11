@@ -21,17 +21,31 @@ class VentasController extends Component
     public $selectedSaleId = null;
     public $componentName = 'Ventas';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'filtroEstatus' => ['except' => ''],
+        'filtroMetodoPago' => ['except' => ''],
+        'fechaInicio' => ['except' => ''],
+        'fechaFin' => ['except' => ''],
+    ];
+
     protected $paginationTheme = 'bootstrap';
 
     protected $listeners = [
-        'cancelSale' => 'cancelSale'
+        'cancelSale' => 'cancelSale',
+        'detailModalClosed' => 'closeDetail'
     ];
 
     public function mount()
     {
-        // Establecer fechas por defecto (último mes)
-        $this->fechaFin = date('Y-m-d');
-        $this->fechaInicio = date('Y-m-d', strtotime('-30 days'));
+        // Establecer fechas por defecto solo si no vienen definidas.
+        if (empty($this->fechaFin)) {
+            $this->fechaFin = date('Y-m-d');
+        }
+
+        if (empty($this->fechaInicio)) {
+            $this->fechaInicio = date('Y-m-d', strtotime('-30 days'));
+        }
     }
 
     public function paginationView()
@@ -73,6 +87,11 @@ class VentasController extends Component
     public function closeDetail()
     {
         $this->selectedSaleId = null;
+    }
+
+    public function requestCloseDetail()
+    {
+        $this->emit('hide-detail-modal');
     }
 
     public function cancelSale($saleId)

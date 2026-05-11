@@ -206,6 +206,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        const cleanModalOverlay = () => {
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        };
+
         window.livewire.on('sale-cancelled', msg => {
             resetCancelButtonLoading();
             Swal.fire({
@@ -226,6 +231,19 @@
 
         window.livewire.on('show-detail-modal', () => {
             $('#detailModal').modal('show');
+        });
+
+        window.livewire.on('hide-detail-modal', () => {
+            $('#detailModal').modal('hide');
+        });
+
+        $(document).on('hidden.bs.modal', '#detailModal', function () {
+            window.livewire.emit('detailModalClosed');
+            cleanModalOverlay();
+        });
+
+        $(document).on('show.bs.modal', '#detailModal', function () {
+            cleanModalOverlay();
         });
     });
 </script>

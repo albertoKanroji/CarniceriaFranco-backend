@@ -90,6 +90,11 @@
     document.addEventListener('DOMContentLoaded', function(){
         let isSavingUser = false
 
+        const cleanModalOverlay = () => {
+            $('body').removeClass('modal-open')
+            $('.modal-backdrop').remove()
+        }
+
         function getStoreButton() {
             return document.querySelector('#theModal .js-btn-store')
         }
@@ -160,6 +165,15 @@
                 }
             })
         }
+
+        $(document).on('click', '#theModal .close-btn', function () {
+            $('#theModal').modal('hide')
+            setTimeout(cleanModalOverlay, 120)
+        })
+
+        $(document).on('hidden.bs.modal', '#theModal', function () {
+            cleanModalOverlay()
+        })
 
     })
 

@@ -21,7 +21,7 @@
                         <span class="badge" style="background: #17a2b8; color: white; padding: 8px 16px; font-size: 14px; font-weight: 600; border-radius: 20px;">Entregada</span>
                     @endif
                 </h6>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" wire:click="closeDetail">
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" wire:click="requestCloseDetail">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -226,7 +226,7 @@
                 </div>
             </div>
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 20px;">
-                <button type="button" class="btn" data-dismiss="modal" wire:click="closeDetail"
+                <button type="button" class="btn" data-dismiss="modal" wire:click="requestCloseDetail"
                         style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%); color: #C9A961; padding: 10px 24px; font-weight: 700; border-radius: 8px; border: 2px solid #8B7346; transition: all 0.3s;">
                     <i class="fas fa-times"></i> Cerrar
                 </button>

@@ -89,8 +89,8 @@
                                         </a>
                                         @if (Auth()->user()->id != $r->id)
                                             <a href="javascript:void(0)" onclick="Confirm('{{ $r->id }}')"
-                                                class="btn btn-danger btn-rounded mb-2" title="Desactivar">
-                                                <i class="fas fa-ban"></i>
+                                                class="btn btn-danger btn-rounded mb-2" title="Eliminar cliente">
+                                                <i class="fas fa-trash"></i>
                                             </a>
                                         @endif
                                     </td>
@@ -143,7 +143,7 @@
 
         swal({
             title: 'CONFIRMAR',
-            text: '¿CONFIRMAS ELIMINAR EL REGISTRO?',
+            text: '¿Confirmas eliminar el cliente? Si tiene ventas, se inactivará en lugar de borrarse.',
             type: 'warning',
             showCancelButton: true,
             cancelButtonText: 'Cerrar',

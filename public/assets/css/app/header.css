@@ -1,0 +1,98 @@
+/* Header personalizado */
+
+.header-container {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e3e6f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.header .header-logo {
+  height: 40px;
+  width: auto;
+}
+
+.header .company-text {
+  font-size: 1.05rem;
+  color: #6c757d;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+}
+
+.header .sidebarCollapse {
+  cursor: pointer;
+  color: #3b3f5c;
+  transition: color 0.2s ease;
+}
+
+.header .sidebarCollapse:hover {
+  color: #1f2937;
+}
+
+.header .user-profile-header img.img-fluid {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+}
+
+.header .avatar-fallback {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9ecef;
+  color: #6b7280;
+  border: 1px solid #dee2e6;
+}
+
+.header .user-name {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.header .user-role {
+  font-size: 0.9rem;
+  line-height: 1.1;
+}
+
+.header .twofa-badge {
+  margin-left: 6px;
+  color: #2ecc71;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.header .btn-logout-tpp {
+  min-width: 122px;
+  justify-content: center;
+}
+
+@media (max-width: 991.98px) {
+  .header .company-text {
+    display: none !important;
+  }
+
+  .header .btn-logout-tpp {
+    min-width: auto;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .header .btn-logout-text {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .header .user-role {
+    display: none;
+  }
+
+  .header .user-name {
+    font-size: 0.9rem;
+  }
+
+  .header .user-profile-header {
+    margin-left: 0.5rem;
+  }
+}

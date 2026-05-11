@@ -1,0 +1,155 @@
+/* Sidebar general */
+.container1 .cf-sidebar-shell,
+.container1 .cf-sidebar-shell #compactSidebar,
+.container1 .cf-sidebar-shell #compact_submenuSidebar {
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.container1 .cf-sidebar-shell {
+    border-right: 1px solid #e9ecef;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar {
+    border-right: 1px solid #eef1f4;
+}
+
+/* Modulos principales */
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu {
+    margin: 6px 8px;
+    border-radius: 10px;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle {
+    height: 98px;
+    padding: 10px 8px;
+    border-radius: 10px;
+    color: #374151;
+    text-decoration: none;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover,
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle {
+    background: #f3f4f6;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > .feather-chevron-left {
+    color: #9ca3af;
+    width: 18px;
+    height: 18px;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories .base-menu {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories .base-icons {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    color: #6b7280;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories .base-icons svg {
+    width: 20px;
+    height: 20px;
+    opacity: .9;
+}
+
+.sidebar-module-name-small {
+    display: block;
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: center;
+    color: #4b5563;
+    max-width: 110px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Submenu */
+.container1 .cf-sidebar-shell #compact_submenuSidebar {
+    border-left: 1px solid #f1f3f5;
+    padding: 12px;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li {
+    margin-bottom: 6px;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li > a.menu-toggle {
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #f1f3f5;
+    background: #f9fafb;
+    color: #1f2937;
+    padding: 10px 12px;
+    text-decoration: none;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li > a.menu-toggle:hover,
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li.active > a.menu-toggle {
+    background: #eef2f7;
+    border-color: #e5e7eb;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-menu {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-icons {
+    width: 22px;
+    height: 22px;
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-icons svg {
+    width: 16px;
+    height: 16px;
+}
+
+.container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list span {
+    display: block;
+    font-size: 14px;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 991px) {
+    .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle {
+        height: 92px;
+    }
+
+    .sidebar-module-name-small {
+        font-size: 11px;
+        max-width: 90px;
+    }
+
+    .container1 .cf-sidebar-shell #compact_submenuSidebar {
+        width: calc(100vw - 120px);
+        max-width: 260px;
+    }
+}
