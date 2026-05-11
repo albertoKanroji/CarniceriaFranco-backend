@@ -39,7 +39,8 @@ class DespachosController extends Component
         'refreshDespachos' => '$refresh',
         'closeModal' => 'closeModal',
         'closeCreateOrderModal' => 'closeCreateOrderModal',
-        'createOrderModalClosed' => 'closeCreateOrderModal'
+        'createOrderModalClosed' => 'closeCreateOrderModal',
+        'despachoModalClosed' => 'closeModal'
     ];
 
     public function mount()
@@ -369,6 +370,11 @@ class DespachosController extends Component
         $this->updatingDetailId = null;
     }
 
+    public function requestCloseModal()
+    {
+        $this->emit('hide-modal');
+    }
+
     private function loadSaleDetails()
     {
         $this->saleDetails = SaleDetail::where('sale_id', $this->selectedSaleId)
@@ -411,18 +417,8 @@ class DespachosController extends Component
 
             $sale->save();
 
-            // Enviar notificación si el estado cambió y es notificable
-            if (OrderNotificationService::shouldSendNotification($estadoAnterior, $sale->estado_envio)) {
-                $emailSent = OrderNotificationService::sendStatusNotification($sale);
-
-                if ($emailSent) {
-                    $this->emit('despacho-updated', 'Estado actualizado y cliente notificado por email');
-                } else {
-                    $this->emit('despacho-updated', 'Estado actualizado (email no enviado - verificar datos del cliente)');
-                }
-            } else {
-                $this->emit('despacho-updated', 'Estado actualizado correctamente');
-            }
+            // En avances parciales solo actualizamos internamente; no notificamos al cliente.
+            $this->emit('despacho-updated', 'Estado actualizado correctamente');
 
             // Recargar detalles
             $this->loadSaleDetails();

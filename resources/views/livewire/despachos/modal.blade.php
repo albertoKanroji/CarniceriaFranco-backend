@@ -53,7 +53,7 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label>Total:</label>
-                                <p><strong style="color: #28a745;">${{ number_format($sale->total, 2) }}</strong></p>
+                                <p><strong style="color: #28a745;">${{ number_format((float) $sale->total, 2) }}</strong></p>
                             </div>
                         </div>
                     </div>
@@ -214,7 +214,7 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" wire:click.prevent="closeModal()" class="btn btn-dark close-btn text-info" data-dismiss="modal">CERRAR</button>
+                <button type="button" wire:click.prevent="requestCloseModal()" class="btn btn-outline-secondary close-btn" data-dismiss="modal">CERRAR</button>
             </div>
         </div>
     </div>

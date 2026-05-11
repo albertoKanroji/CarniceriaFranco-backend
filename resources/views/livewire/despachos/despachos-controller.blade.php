@@ -222,6 +222,12 @@
             noty(Msg, 1);
         });
 
+        $(document).on('hidden.bs.modal', '#theModal', function () {
+            window.livewire.emit('despachoModalClosed');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        });
+
         $(document).on('hidden.bs.modal', '#createOrderModal', function () {
             window.livewire.emit('createOrderModalClosed');
             $('body').removeClass('modal-open');
