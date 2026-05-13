@@ -1,17 +1,27 @@
+/* Sidebar palette */
+:root {
+    --sb-accent: #D9BA82;
+    --sb-accent-2: #D9B384;
+    --sb-accent-soft: #D9C5AD;
+    --sb-ink: #59514F;
+    --sb-surface: #F2F2F2;
+    --sb-white: #ffffff;
+}
+
 /* Sidebar general */
 .container1 .cf-sidebar-shell,
 .container1 .cf-sidebar-shell #compactSidebar,
 .container1 .cf-sidebar-shell #compact_submenuSidebar {
-    background: #ffffff;
+    background: var(--sb-surface);
     box-shadow: none;
 }
 
 .container1 .cf-sidebar-shell {
-    border-right: 1px solid #e9ecef;
+    border-right: 1px solid var(--sb-accent-soft);
 }
 
 .container1 .cf-sidebar-shell #compactSidebar {
-    border-right: 1px solid #eef1f4;
+    border-right: 1px solid var(--sb-accent-soft);
 }
 
 /* Modulos principales */
@@ -24,35 +34,35 @@
     height: 98px;
     padding: 10px 8px;
     border-radius: 10px;
-    color: #374151;
+    color: var(--sb-ink);
     text-decoration: none;
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover,
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle {
-    background: #e9edf5 !important;
-    border: 1px solid #d7deea;
+    background: linear-gradient(135deg, var(--sb-accent) 0%, var(--sb-accent-2) 100%) !important;
+    border: 1px solid var(--sb-accent-2);
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .sidebar-module-name-small,
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .sidebar-module-name-small {
-    color: #111827;
+    color: var(--sb-ink);
     font-weight: 700;
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .base-icons,
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .base-icons {
-    color: #2563eb;
+    color: var(--sb-ink);
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .base-icons svg,
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .base-icons svg {
-    stroke: #2563eb;
+    stroke: var(--sb-ink);
     opacity: 1;
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > .feather-chevron-left {
-    color: #9ca3af;
+    color: var(--sb-ink);
     width: 18px;
     height: 18px;
 }
@@ -72,7 +82,7 @@
     align-items: center;
     justify-content: center;
     margin-bottom: 8px;
-    color: #6b7280;
+    color: var(--sb-ink);
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories .base-icons svg {
@@ -86,7 +96,7 @@
     font-size: 12px;
     line-height: 1.1;
     text-align: center;
-    color: #4b5563;
+    color: var(--sb-ink);
     max-width: 110px;
     white-space: normal;
     word-break: break-word;
@@ -94,7 +104,7 @@
 
 /* Submenu */
 .container1 .cf-sidebar-shell #compact_submenuSidebar {
-    border-left: 1px solid #f1f3f5;
+    border-left: 1px solid var(--sb-accent-soft);
     padding: 12px;
 }
 
@@ -111,9 +121,9 @@
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li > a.menu-toggle {
     display: block;
     border-radius: 8px;
-    border: 1px solid #f1f3f5;
-    background: #f9fafb;
-    color: #1f2937;
+    border: 1px solid var(--sb-accent-soft);
+    background: var(--sb-white);
+    color: var(--sb-ink);
     padding: 10px 12px;
     text-decoration: none;
     transition: background-color .15s ease, border-color .15s ease;
@@ -121,8 +131,8 @@
 
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li > a.menu-toggle:hover,
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list li.active > a.menu-toggle {
-    background: #eef2f7;
-    border-color: #e5e7eb;
+    background: var(--sb-accent-soft);
+    border-color: var(--sb-accent-2);
 }
 
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-menu {
@@ -138,7 +148,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #4b5563;
+    color: var(--sb-ink);
     flex-shrink: 0;
 }
 
@@ -150,7 +160,7 @@
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list span {
     display: block;
     font-size: 14px;
-    color: #1f2937;
+    color: var(--sb-ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
