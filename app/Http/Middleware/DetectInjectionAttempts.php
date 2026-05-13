@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DetectInjectionAttempts
 {
@@ -37,7 +38,11 @@ class DetectInjectionAttempts
 
     protected $excludedKeys = ['password', 'password_confirmation', 'token', '_token'];
 
-    protected $excludedPaths = ['livewire/message'];
+    protected $excludedPaths = [
+        'livewire',
+        'livewire/message',
+        'livewire/upload-file',
+    ];
 
     public function handle(Request $request, Closure $next)
     {
@@ -79,6 +84,10 @@ class DetectInjectionAttempts
 
     private function shouldSkip(Request $request): bool
     {
+        if ($request->is('livewire/*')) {
+            return true;
+        }
+
         foreach ($this->excludedPaths as $path) {
             if ($request->is($path . '*')) {
                 return true;
@@ -103,7 +112,7 @@ class DetectInjectionAttempts
 
     private function logDetection(Request $request, array $payload, string $pattern, string $risk): void
     {
-        Log::channel('security')->warning('Intento de inyección detectado', [
+        $context = [
             'risk' => $risk,
             'ip' => $request->ip(),
             'user_id' => auth()->id(),
@@ -113,6 +122,13 @@ class DetectInjectionAttempts
             'pattern_matched' => $pattern,
             'user_agent' => $request->userAgent(),
             'timestamp' => now(),
-        ]);
+        ];
+
+        try {
+            Log::channel('security')->warning('Intento de inyección detectado', $context);
+        } catch (Throwable $e) {
+            // Fallback si el canal "security" no esta configurado.
+            Log::warning('Intento de inyeccion detectado', $context + ['log_fallback' => true]);
+        }
     }
 }
