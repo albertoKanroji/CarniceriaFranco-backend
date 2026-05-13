@@ -56,7 +56,15 @@
                                         <h6>{{ $category->nombre }}</h6>
                                     </td>
                                     <td class="text-center">
-                                        <h6>{{ Str::limit($category->descripcion, 50) ?? 'N/A' }}</h6>
+                                        <h6>
+                                            {{
+                                                $category->descripcion
+                                                    ? (strlen($category->descripcion) > 50
+                                                        ? substr($category->descripcion, 0, 50) . '...'
+                                                        : $category->descripcion)
+                                                    : 'N/A'
+                                            }}
+                                        </h6>
                                     </td>
                                     <td class="text-center">
                                         <h6>{{ $category->orden }}</h6>
