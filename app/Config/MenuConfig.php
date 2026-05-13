@@ -9,9 +9,9 @@ class MenuConfig
         return [
             'ADMIN' => ['*'],
             'EMPLOYEE' => [
-                'ventas',
-                'despachos'
-            ]
+                'admin/ventas',
+                'clientes/despachos',
+            ],
         ];
     }
 
@@ -32,7 +32,7 @@ class MenuConfig
                 ],
                 'submenu' => [
                     [
-                        'url' => 'categorias',
+                        'url' => 'admin/categorias',
                         'title' => 'Categorías',
                         'gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         'shadow' => 'rgba(102, 126, 234, 0.3)',
@@ -47,7 +47,7 @@ class MenuConfig
                         ]
                     ],
                     [
-                        'url' => 'prod/productos',
+                        'url' => 'admin/productos',
                         'title' => 'Productos',
                         'gradient' => 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                         'shadow' => 'rgba(240, 147, 251, 0.3)',
@@ -62,7 +62,7 @@ class MenuConfig
                         ]
                     ],
                     [
-                        'url' => 'ventas',
+                        'url' => 'admin/ventas',
                         'title' => 'Ventas',
                         'gradient' => 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                         'shadow' => 'rgba(79, 172, 254, 0.3)',
@@ -104,7 +104,7 @@ class MenuConfig
                         ]
                     ],
                     [
-                        'url' => 'despachos',
+                        'url' => 'clientes/despachos',
                         'title' => 'Despachos',
                         'gradient' => 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
                         'shadow' => 'rgba(250, 112, 154, 0.3)',
@@ -133,7 +133,7 @@ class MenuConfig
                 ],
                 'submenu' => [
                     [
-                        'url' => 'users',
+                        'url' => 'sistema/users',
                         'title' => 'Usuarios',
                         'gradient' => 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
                         'shadow' => 'rgba(48, 207, 208, 0.3)',
@@ -148,7 +148,7 @@ class MenuConfig
                         ]
                     ],
                     [
-                        'url' => 'roles',
+                        'url' => 'sistema/roles',
                         'title' => 'Roles',
                         'gradient' => 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
                         'shadow' => 'rgba(168, 237, 234, 0.3)',

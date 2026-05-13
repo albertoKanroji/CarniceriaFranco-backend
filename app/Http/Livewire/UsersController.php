@@ -1,13 +1,11 @@
 <?php
-
 namespace App\Http\Livewire;
-use App\Models\Sale;
+
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
-
 
 class UsersController extends Component
 {
@@ -26,24 +24,23 @@ class UsersController extends Component
 
     public function mount()
     {
-        $this->pageTitle = 'Listado';
+        $this->pageTitle     = 'Listado';
         $this->componentName = 'Usuarios';
-        $this->status = 'Elegir';
+        $this->status        = 'Elegir';
     }
-
 
     public function render()
     {
-        if (strlen($this->search) > 0)
+        if (strlen($this->search) > 0) {
             $data = User::where('name', 'like', '%' . $this->search . '%')
                 ->select('*')->orderBy('name', 'asc')->paginate($this->pagination);
-        else
+        } else {
             $data = User::select('*')->orderBy('name', 'asc')->paginate($this->pagination);
-
+        }
 
         return view('livewire.users.component', [
-            'data' => $data,
-            'roles' => Role::orderBy('name', 'asc')->get()
+            'data'  => $data,
+            'roles' => Role::orderBy('name', 'asc')->get(),
         ])
             ->extends('layouts.theme.app')
             ->section('content');
@@ -51,73 +48,70 @@ class UsersController extends Component
 
     public function resetUI()
     {
-        $this->name = '';
-        $this->email = '';
-        $this->password = '';
-        $this->phone = '';
-        $this->image = '';
-        $this->search = '';
-        $this->status = 'Elegir';
+        $this->name        = '';
+        $this->email       = '';
+        $this->password    = '';
+        $this->phone       = '';
+        $this->image       = '';
+        $this->search      = '';
+        $this->status      = 'Elegir';
         $this->selected_id = 0;
         $this->resetValidation();
         $this->resetPage();
     }
 
-
     public function edit(User $user)
     {
         $this->selected_id = $user->id;
-        $this->name = $user->name;
-        $this->phone = $user->phone;
-        $this->profile = $user->getRoleNames()->first() ?? $user->profile;
-        $this->status = $user->status;
-        $this->email = $user->email;
-        $this->password = '';
+        $this->name        = $user->name;
+        $this->phone       = $user->phone;
+        $this->profile     = $user->getRoleNames()->first() ?? $user->profile;
+        $this->status      = $user->status;
+        $this->email       = $user->email;
+        $this->password    = '';
 
         $this->emit('show-modal', 'open!');
     }
 
-
     protected $listeners = [
         'deleteRow' => 'destroy',
-        'resetUI' => 'resetUI'
+        'resetUI'   => 'resetUI',
 
     ];
-
 
     public function Store()
     {
         $rules = [
-            'name' => 'required|min:3',
-            'email' => 'required|unique:users|email',
-            'status' => 'required|not_in:Elegir',
-            'profile' => 'required|not_in:Elegir',
-            'password' => 'required|min:3'
+            'name'     => 'required|min:3',
+            'email'    => 'required|unique:users|email',
+            'status'   => 'required|not_in:Elegir',
+            'profile'  => 'required|not_in:Elegir',
+            'password' => 'required|min:3',
         ];
 
         $messages = [
-            'name.required' => 'Ingresa el nombre',
-            'name.min' => 'El nombre del usuario debe tener al menos 3 caracteres',
-            'email.required' => 'Ingresa el correo ',
-            'email.email' => 'Ingresa un correo válido',
-            'email.unique' => 'El email ya existe en sistema',
-            'status.required' => 'Selecciona el estatus del usuario',
-            'status.not_in' => 'Selecciona el estatus',
-            'profile.required' => 'Selecciona el perfil/role del usuario',
-            'profile.not_in' => 'Selecciona un perfil/role distinto a Elegir',
+            'name.required'     => 'Ingresa el nombre',
+            'name.min'          => 'El nombre del usuario debe tener al menos 3 caracteres',
+            'email.required'    => 'Ingresa el correo ',
+            'email.email'       => 'Ingresa un correo válido',
+            'email.unique'      => 'El email ya existe en sistema',
+            'status.required'   => 'Selecciona el estatus del usuario',
+            'status.not_in'     => 'Selecciona el estatus',
+            'profile.required'  => 'Selecciona el perfil/role del usuario',
+            'profile.not_in'    => 'Selecciona un perfil/role distinto a Elegir',
             'password.required' => 'Ingresa el password',
-            'password.min' => 'El password debe tener al menos 3 caracteres'
+            'password.min'      => 'El password debe tener al menos 3 caracteres',
         ];
 
         $this->validate($rules, $messages);
 
         $user = User::create([
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'status' => $this->resolveStatusValue($this->status),
-            'profile' => $this->resolveProfileValue($this->profile),
-            'password' => bcrypt($this->password)
+            'name'     => $this->name,
+            'email'    => $this->email,
+            'phone'    => $this->phone,
+            'status'   => $this->resolveStatusValue($this->status),
+            'profile'  => $this->resolveProfileValue($this->profile),
+            'password' => bcrypt($this->password),
         ]);
 
         $user->syncRoles($this->profile);
@@ -138,37 +132,36 @@ class UsersController extends Component
 
         $rules = [
             'email' => "required|email|unique:users,email,{$this->selected_id}",
-            'name' => 'required|min:3',
-            'status' => 'required|not_in:Elegir',
-            'profile' => 'required|not_in:Elegir'
+            'name'    => 'required|min:3',
+            'status'  => 'required|not_in:Elegir',
+            'profile' => 'required|not_in:Elegir',
         ];
 
         $messages = [
-            'name.required' => 'Ingresa el nombre',
-            'name.min' => 'El nombre del usuario debe tener al menos 3 caracteres',
-            'email.required' => 'Ingresa el correo ',
-            'email.email' => 'Ingresa un correo válido',
-            'email.unique' => 'El email ya existe en sistema',
-            'status.required' => 'Selecciona el estatus del usuario',
-            'status.not_in' => 'Selecciona el estatus',
+            'name.required'    => 'Ingresa el nombre',
+            'name.min'         => 'El nombre del usuario debe tener al menos 3 caracteres',
+            'email.required'   => 'Ingresa el correo ',
+            'email.email'      => 'Ingresa un correo válido',
+            'email.unique'     => 'El email ya existe en sistema',
+            'status.required'  => 'Selecciona el estatus del usuario',
+            'status.not_in'    => 'Selecciona el estatus',
             'profile.required' => 'Selecciona el perfil/role del usuario',
-            'profile.not_in' => 'Selecciona un perfil/role distinto a Elegir'
+            'profile.not_in'   => 'Selecciona un perfil/role distinto a Elegir',
         ];
 
         $this->validate($rules, $messages);
 
         $user = User::find($this->selected_id);
         $user->update([
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'status' => $this->resolveStatusValue($this->status),
-            'profile' => $this->resolveProfileValue($this->profile),
-            'password' => strlen($this->password) > 0 ? bcrypt($this->password) : $user->password
+            'name'     => $this->name,
+            'email'    => $this->email,
+            'phone'    => $this->phone,
+            'status'   => $this->resolveStatusValue($this->status),
+            'profile'  => $this->resolveProfileValue($this->profile),
+            'password' => strlen($this->password) > 0 ? bcrypt($this->password) : $user->password,
         ]);
 
         $user->syncRoles($this->profile);
-
 
         if ($this->image) {
             $customFileName = uniqid() . ' _.' . $this->image->extension();
@@ -188,7 +181,6 @@ class UsersController extends Component
         $this->resetUI();
         $this->emit('user-updated', 'Usuario Actualizado');
     }
-
 
     public function destroy(User $user)
     {

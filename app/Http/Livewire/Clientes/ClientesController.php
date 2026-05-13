@@ -5,15 +5,16 @@ namespace App\Http\Livewire\Clientes;
 use Livewire\Component;
 use App\Models\Customers;
 use App\Models\Sale;
-use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
 
 class ClientesController extends Component
 {
     use WithPagination;
-    use WithFileUploads;
+
     public $pageTitle, $componentName;
-    public $customers;
     private $pagination = 5;
     public $nombre;
     public $apellido;
@@ -37,18 +38,16 @@ class ClientesController extends Component
     public $search;
     public $profile;
     public $roles;
+
     public function buscar()
     {
         $this->resetPage();
-        $this->customers = Customers::where('correo', 'like', '%' . $this->search . '%')
-            ->orWhere('nombre', 'like', '%' . $this->search . '%')
-            ->orWhere('apellido', 'like', '%' . $this->search . '%')
-            ->orWhere('telefono', 'like', '%' . $this->search . '%')
-            ->orWhere('rfc', 'like', '%' . $this->search . '%')
-            ->paginate($this->pagination);
     }
 
-
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
 
     public function mount()
     {
@@ -62,8 +61,22 @@ class ClientesController extends Component
 
     public function render()
     {
+        $term = trim((string) $this->search);
+
+        $query = Customers::query();
+
+        if ($term !== '') {
+            $query->where(function ($q) use ($term) {
+                $q->where('correo', 'like', '%' . $term . '%')
+                    ->orWhere('nombre', 'like', '%' . $term . '%')
+                    ->orWhere('apellido', 'like', '%' . $term . '%')
+                    ->orWhere('telefono', 'like', '%' . $term . '%')
+                    ->orWhere('rfc', 'like', '%' . $term . '%');
+            });
+        }
+
         return view('livewire.clientes.clientes-controller', [
-            'data' => $this->customers ?? Customers::paginate($this->pagination),
+            'data' => $query->latest('id')->paginate($this->pagination),
         ])
             ->extends('layouts.theme.app')
             ->section('content');
@@ -117,17 +130,95 @@ class ClientesController extends Component
     }
     public function Store()
     {
-        $rules = [
-            'nombre' => 'required|min:3',
-            'apellido' => 'required|min:3',
-            'correo' => 'required|unique:customers|email',
-            'telefono' => 'nullable|min:10',
-            'tipo_cliente' => 'required|in:minorista,mayorista,distribuidor',
-            'estatus' => 'required|in:activo,inactivo,suspendido',
-            'password' => 'required|min:6'
-        ];
+        $this->validate($this->rules(), $this->messages());
 
-        $messages = [
+        try {
+            $payload = $this->customerPayload();
+            $payload['password'] = Hash::make($this->password);
+
+            Customers::create($payload);
+
+            $this->resetUI();
+            $this->emit('user-added', 'Cliente registrado');
+        } catch (\Throwable $e) {
+            $this->emit('global-msg', 'No se pudo registrar el cliente.');
+        }
+    }
+
+    public function Update()
+    {
+        try {
+            $user = Customers::findOrFail($this->selected_id);
+
+            $this->validate($this->rules($this->selected_id), $this->messages());
+
+            $payload = $this->customerPayload();
+
+            if (! empty($this->password)) {
+                $payload['password'] = Hash::make($this->password);
+            }
+
+            $user->update($payload);
+
+            $this->resetUI();
+            $this->emit('global-msg', 'Cliente actualizado');
+            $this->emit('user-updated', 'Cliente actualizado');
+        } catch (\Throwable $e) {
+            $this->emit('global-msg', 'No se pudo actualizar el cliente.');
+        }
+    }
+
+    protected $listeners = [
+        'deleteRow' => 'destroy',
+        'resetUI' => 'resetUI',
+
+    ];
+
+    public function destroy(Customers $user)
+    {
+        try {
+            $hasSales = Sale::where('customer_id', $user->id)->exists();
+
+            if ($hasSales) {
+                $user->update(['estatus' => 'inactivo']);
+                $this->emit('user-deleted', 'Cliente inactivado (tiene ventas relacionadas)');
+            } else {
+                $user->delete();
+                $this->emit('user-deleted', 'Cliente eliminado correctamente');
+            }
+
+            $this->resetUI();
+        } catch (\Throwable $e) {
+            $this->emit('global-msg', 'No se pudo eliminar o inactivar el cliente.');
+        }
+    }
+
+    private function rules(int $ignoreId = 0): array
+    {
+        return [
+            'nombre' => ['required', 'string', 'min:3', 'max:100'],
+            'apellido' => ['required', 'string', 'min:3', 'max:100'],
+            'apellido2' => ['nullable', 'string', 'max:100'],
+            'correo' => ['required', 'email', 'max:120', Rule::unique('customers', 'correo')->ignore($ignoreId)],
+            'telefono' => ['nullable', 'string', 'min:10', 'max:20'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'ciudad' => ['nullable', 'string', 'max:100'],
+            'estado' => ['nullable', 'string', 'max:100'],
+            'codigo_postal' => ['nullable', 'string', 'max:10'],
+            'pais' => ['nullable', 'string', 'max:100'],
+            'rfc' => ['nullable', 'string', 'max:20'],
+            'tipo_cliente' => ['required', Rule::in(['minorista', 'mayorista', 'distribuidor'])],
+            'estatus' => ['required', Rule::in(['activo', 'inactivo', 'suspendido'])],
+            'limite_credito' => ['nullable', 'numeric', 'min:0'],
+            'descuento_preferencial' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'notas' => ['nullable', 'string', 'max:1000'],
+            'password' => [$ignoreId > 0 ? 'nullable' : 'required', 'string', 'min:6', 'max:255'],
+        ];
+    }
+
+    private function messages(): array
+    {
+        return [
             'nombre.required' => 'Ingresa el nombre',
             'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
             'apellido.required' => 'Ingresa el apellido',
@@ -139,117 +230,38 @@ class ClientesController extends Component
             'tipo_cliente.required' => 'Selecciona el tipo de cliente',
             'estatus.required' => 'Selecciona el estatus',
             'password.required' => 'Ingresa la contraseña',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres'
+            'password.min' => 'La contraseña debe tener al menos 6 caracteres',
+            'descuento_preferencial.max' => 'El descuento no puede ser mayor a 100%',
+            'limite_credito.min' => 'El límite de crédito no puede ser negativo',
         ];
+    }
 
-        $this->validate($rules, $messages);
-
-        $user = Customers::create([
-            'nombre' => $this->nombre,
-            'apellido' => $this->apellido,
-            'apellido2' => $this->apellido2,
-            'correo' => $this->correo,
-            'password' => bcrypt($this->password),
-            'telefono' => $this->telefono,
-            'direccion' => $this->direccion,
-            'ciudad' => $this->ciudad,
-            'estado' => $this->estado,
-            'codigo_postal' => $this->codigo_postal,
-            'pais' => $this->pais,
-            'rfc' => $this->rfc,
+    private function customerPayload(): array
+    {
+        return [
+            'nombre' => trim((string) $this->nombre),
+            'apellido' => trim((string) $this->apellido),
+            'apellido2' => $this->normalizeNullableText($this->apellido2),
+            'correo' => Str::lower(trim((string) $this->correo)),
+            'telefono' => $this->normalizeNullableText($this->telefono),
+            'direccion' => $this->normalizeNullableText($this->direccion),
+            'ciudad' => $this->normalizeNullableText($this->ciudad),
+            'estado' => $this->normalizeNullableText($this->estado),
+            'codigo_postal' => $this->normalizeNullableText($this->codigo_postal),
+            'pais' => $this->normalizeNullableText($this->pais) ?: 'México',
+            'rfc' => $this->normalizeNullableText($this->rfc),
             'tipo_cliente' => $this->tipo_cliente,
             'estatus' => $this->estatus,
-            'limite_credito' => $this->limite_credito ?? 0,
-            'descuento_preferencial' => $this->descuento_preferencial ?? 0,
-            'notas' => $this->notas,
-        ]);
-
-        $this->resetUI();
-        $this->emit('user-added', 'Cliente Registrado');
+            'limite_credito' => $this->limite_credito !== null && $this->limite_credito !== '' ? (float) $this->limite_credito : 0,
+            'descuento_preferencial' => $this->descuento_preferencial !== null && $this->descuento_preferencial !== '' ? (float) $this->descuento_preferencial : 0,
+            'notas' => $this->normalizeNullableText($this->notas),
+        ];
     }
 
-    public function Update()
+    private function normalizeNullableText($value): ?string
     {
-        try {
-            $user = Customers::find($this->selected_id);
+        $value = trim((string) ($value ?? ''));
 
-            $rules = [
-                'nombre' => 'required|min:3',
-                'apellido' => 'required|min:3',
-                'correo' => 'required|email|unique:customers,correo,' . $this->selected_id,
-                'telefono' => 'nullable|min:10',
-                'tipo_cliente' => 'required|in:minorista,mayorista,distribuidor',
-                'estatus' => 'required|in:activo,inactivo,suspendido',
-                'password' => 'nullable|min:6'
-            ];
-
-            $messages = [
-                'nombre.required' => 'Ingresa el nombre',
-                'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
-                'apellido.required' => 'Ingresa el apellido',
-                'apellido.min' => 'El apellido debe tener al menos 3 caracteres',
-                'correo.required' => 'Ingresa el correo',
-                'correo.email' => 'Ingresa un correo válido',
-                'correo.unique' => 'El email ya existe en el sistema',
-                'telefono.min' => 'El teléfono debe tener al menos 10 caracteres',
-                'tipo_cliente.required' => 'Selecciona el tipo de cliente',
-                'estatus.required' => 'Selecciona el estatus',
-                'password.min' => 'La contraseña debe tener al menos 6 caracteres'
-            ];
-
-            $this->validate($rules, $messages);
-
-            $user->update([
-                'nombre' => $this->nombre,
-                'apellido' => $this->apellido,
-                'apellido2' => $this->apellido2,
-                'correo' => $this->correo,
-                'password' => strlen($this->password) > 0 ? bcrypt($this->password) : $user->password,
-                'telefono' => $this->telefono,
-                'direccion' => $this->direccion,
-                'ciudad' => $this->ciudad,
-                'estado' => $this->estado,
-                'codigo_postal' => $this->codigo_postal,
-                'pais' => $this->pais,
-                'rfc' => $this->rfc,
-                'tipo_cliente' => $this->tipo_cliente,
-                'estatus' => $this->estatus,
-                'limite_credito' => $this->limite_credito ?? 0,
-                'descuento_preferencial' => $this->descuento_preferencial ?? 0,
-                'notas' => $this->notas,
-            ]);
-
-            $this->resetUI();
-            $this->emit('global-msg', 'Cliente Actualizado');
-            $this->emit('user-added', 'Cliente Actualizado');
-        } catch (\Exception $e) {
-            $this->emit('global-msg', 'Error al actualizar el cliente: ' . $e->getMessage());
-        }
-    }
-
-    protected $listeners = [
-        'deleteRow' => 'destroy',
-        'resetUI' => 'resetUI'
-
-    ];
-
-    public function destroy(Customers $user)
-    {
-        try {
-            $hasSales = Sale::where('customer_id', $user->id)->exists();
-
-            if ($hasSales) {
-                $user->estatus = 'inactivo';
-                $user->save();
-                $this->emit('user-deleted', 'Cliente inactivado (tiene ventas relacionadas)');
-            } else {
-                $user->delete();
-                $this->emit('user-deleted', 'Cliente eliminado correctamente');
-            }
-
-            $this->resetUI();
-        } catch (\Exception $e) {
-            $this->emit('global-msg', 'Error al desactivar el cliente: ' . $e->getMessage());
-        }
+        return $value === '' ? null : $value;
     }
 }

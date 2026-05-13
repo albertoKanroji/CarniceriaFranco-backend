@@ -4,6 +4,9 @@ namespace App\Http\Livewire\Categorias;
 
 use Livewire\Component;
 use App\Models\Category;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
@@ -28,6 +31,11 @@ class CategoriasController extends Component
         $this->componentName = 'Categorías';
     }
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
     public function paginationView()
     {
         return 'vendor.livewire.bootstrap';
@@ -35,9 +43,11 @@ class CategoriasController extends Component
 
     public function render()
     {
-        $data = Category::when($this->search, function($query) {
+        $data = Category::when($this->search, function ($query) {
             return $query->where('nombre', 'like', '%' . $this->search . '%');
-        })->orderBy('orden', 'asc')->paginate($this->pagination);
+        })
+            ->orderBy('orden', 'asc')
+            ->paginate($this->pagination);
 
         return view('livewire.categorias.categorias-controller', ['data' => $data])
             ->extends('layouts.theme.app')
@@ -68,140 +78,151 @@ class CategoriasController extends Component
 
     public function Store()
     {
-        $rules = [
-            'nombre' => 'required|min:3|unique:categories',
-            'activo' => 'required|boolean',
-            'orden' => 'required|integer|min:0',
-        ];
+        $this->validate($this->rules(), $this->messages());
 
-        $messages = [
-            'nombre.required' => 'Ingresa el nombre de la categoría',
-            'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
-            'nombre.unique' => 'Esta categoría ya existe',
-            'activo.required' => 'Selecciona el estado',
-            'orden.required' => 'Ingresa el orden',
-            'orden.integer' => 'El orden debe ser un número',
-        ];
+        try {
+            $imageName = $this->imagen ? $this->storeImage() : null;
 
-        $this->validate($rules, $messages);
+            Category::create([
+                'nombre' => trim($this->nombre),
+                'descripcion' => $this->descripcion,
+                'imagen' => $imageName,
+                'activo' => (bool) $this->activo,
+                'orden' => (int) $this->orden,
+            ]);
 
-        $imageName = null;
-        if ($this->imagen) {
-            // Crear directorio si no existe
-            $uploadPath = public_path('categorias');
-            if (! file_exists($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
-            }
-
-            $fileName = uniqid() . '.' . $this->imagen->extension();
-            $tempFile = $this->imagen->getRealPath();
-
-            // Mover el archivo usando copy y unlink para mejor compatibilidad
-            if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
-                $imageName = '/categorias/' . $fileName; // Guardar la ruta completa en la BD
-            } else {
-                throw new \Exception('No se pudo guardar la imagen');
-            }
+            $this->resetUI();
+            $this->emit('category-added', 'Categoría registrada');
+        } catch (\Throwable $e) {
+            $this->emit('category-error', 'No se pudo registrar la categoría.');
         }
-
-        Category::create([
-            'nombre' => $this->nombre,
-            'descripcion' => $this->descripcion,
-            'imagen' => $imageName,
-            'activo' => $this->activo,
-            'orden' => $this->orden,
-        ]);
-
-        $this->resetUI();
-        $this->emit('category-added', 'Categoría Registrada');
     }
 
     public function Update()
     {
-        $rules = [
-            'nombre' => 'required|min:3|unique:categories,nombre,' . $this->selected_id,
-            'activo' => 'required|boolean',
-            'orden' => 'required|integer|min:0',
-        ];
-
-        $messages = [
-            'nombre.required' => 'Ingresa el nombre de la categoría',
-            'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
-            'nombre.unique' => 'Esta categoría ya existe',
-        ];
-
-        $this->validate($rules, $messages);
+        $this->validate($this->rules($this->selected_id), $this->messages());
 
         try {
-            $category = Category::find($this->selected_id);
+            $category = Category::findOrFail($this->selected_id);
+            $previousImage = $category->imagen;
+            $imageName = $previousImage;
 
-            $imageName = $category->imagen;
             if ($this->imagen) {
-                // Crear directorio si no existe
-                $uploadPath = public_path('categorias');
-                if (! file_exists($uploadPath)) {
-                    mkdir($uploadPath, 0755, true);
-                }
-
-                $fileName = uniqid() . '.' . $this->imagen->extension();
-                $tempFile = $this->imagen->getRealPath();
-
-                // Mover el archivo usando copy
-                if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
-                    $imageName = '/categorias/' . $fileName; // Guardar la ruta completa en la BD
-
-                    // Eliminar imagen anterior si existe
-                    if ($category->imagen) {
-                        $oldImagePath = public_path($category->imagen);
-                        if (file_exists($oldImagePath)) {
-                            unlink($oldImagePath);
-                        }
-                    }
-                } else {
-                    throw new \Exception('No se pudo actualizar la imagen');
-                }
+                $imageName = $this->storeImage();
             }
 
             $category->update([
-                'nombre' => $this->nombre,
+                'nombre' => trim($this->nombre),
                 'descripcion' => $this->descripcion,
                 'imagen' => $imageName,
-                'activo' => $this->activo,
-                'orden' => $this->orden,
+                'activo' => (bool) $this->activo,
+                'orden' => (int) $this->orden,
             ]);
 
+            if ($this->imagen && $previousImage) {
+                $this->deleteImage($previousImage);
+            }
+
             $this->resetUI();
-            $this->emit('category-updated', 'Categoría Actualizada');
-        } catch (\Exception $e) {
-            $this->emit('category-error', 'Error: ' . $e->getMessage());
+            $this->emit('category-updated', 'Categoría actualizada');
+        } catch (\Throwable $e) {
+            $this->emit('category-error', 'No se pudo actualizar la categoría.');
         }
     }
 
     protected $listeners = [
         'deleteRow' => 'destroy',
-        'resetUI' => 'resetUI'
+        'resetUI' => 'resetUI',
     ];
 
     public function destroy(Category $category)
     {
         try {
-            if ($category->products()->count() > 0) {
+            if ($category->products()->exists()) {
                 $this->emit('category-error', 'No se puede eliminar. Tiene productos asociados.');
                 return;
             }
 
-            if ($category->imagen) {
-                $imagePath = public_path($category->imagen);
-                if (file_exists($imagePath)) {
-                    unlink($imagePath);
-                }
-            }
+            $image = $category->imagen;
 
             $category->delete();
+
+            if ($image) {
+                $this->deleteImage($image);
+            }
+
             $this->resetUI();
             $this->emit('category-deleted', 'Categoría eliminada con éxito');
-        } catch (\Exception $e) {
-            $this->emit('category-error', 'Error al eliminar: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->emit('category-error', 'No se pudo eliminar la categoría.');
+        }
+    }
+
+    private function rules(int $ignoreId = 0): array
+    {
+        return [
+            'nombre' => ['required', 'string', 'min:3', 'max:100', Rule::unique('categories', 'nombre')->ignore($ignoreId)],
+            'descripcion' => ['nullable', 'string', 'max:255'],
+            'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'activo' => ['required', 'boolean'],
+            'orden' => ['required', 'integer', 'min:0'],
+        ];
+    }
+
+    private function messages(): array
+    {
+        return [
+            'nombre.required' => 'Ingresa el nombre de la categoría',
+            'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
+            'nombre.max' => 'El nombre no puede superar 100 caracteres',
+            'nombre.unique' => 'Esta categoría ya existe',
+            'descripcion.max' => 'La descripción no puede superar 255 caracteres',
+            'imagen.image' => 'El archivo debe ser una imagen válida',
+            'imagen.mimes' => 'La imagen debe ser JPG, JPEG, PNG, WEBP o GIF',
+            'imagen.max' => 'La imagen no puede superar 2MB',
+            'activo.required' => 'Selecciona el estado',
+            'orden.required' => 'Ingresa el orden',
+            'orden.integer' => 'El orden debe ser un número',
+        ];
+    }
+
+    private function storeImage(): string
+    {
+        $extension = strtolower($this->imagen->getClientOriginalExtension());
+        $fileName = Str::uuid() . '.' . $extension;
+
+        $this->imagen->storeAs('categories', $fileName, 'public');
+
+        return $fileName;
+    }
+
+    private function deleteImage(string $image): void
+    {
+        $normalized = ltrim($image, '/');
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            $normalized = Str::after($normalized, 'storage/');
+        }
+
+        $paths = [];
+
+        if (Str::contains($normalized, '/')) {
+            $paths[] = $normalized;
+        } else {
+            $paths[] = 'categories/' . $normalized;
+            $paths[] = 'categorias/' . $normalized;
+        }
+
+        foreach (array_unique($paths) as $path) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            // Compatibilidad con archivos antiguos guardados directo en /public
+            $legacyPath = public_path($path);
+            if (file_exists($legacyPath)) {
+                @unlink($legacyPath);
+            }
         }
     }
 }
