@@ -57,11 +57,6 @@ class VentasController extends Component
         }
     }
 
-    public function paginationView()
-    {
-        return 'vendor.livewire.bootstrap';
-    }
-
     public function updatingSearch()
     {
         $this->resetPage();
