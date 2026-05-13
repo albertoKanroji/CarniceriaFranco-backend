@@ -6,67 +6,57 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
     <title>Carniceria Franco</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/logo.jpeg') }}" />
+    <script defer src="{{ asset('plugins/cdn/alpinejs/alpine.min.js') }}"></script>
+    <script src="{{ asset('assets/js/libs/jquery-3.1.1.min.js') }}"></script>
+    <script src="{{ asset('plugins/cdn/bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <link href="{{ asset('plugins/cdn/toastr/toastr.min.css') }}" rel="stylesheet">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- BEGIN GLOBAL MANDATORY STYLES -->
+    @php
+        $nonce = app()->bound('nonce') ? app('nonce') : '';
+    @endphp
+    @if (Request::is('aduanas/modulos-sistema/reportes*'))
+        @php
+            $nonce = app('nonce');
+            header(
+                "Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' wss: https:;",
+                true,
+            );
+        @endphp
+    @endif
+    @livewireStyles
     @include('layouts.theme.styles')
-    <!-- END PAGE LEVEL PLUGINS/CUSTOM STYLES -->
-
-    <link rel="stylesheet" href="{{ asset('css/apexcharts.css') }}" />
-    <script src="{{ asset('js/apexcharts.js') }}"></script>
-
 
 </head>
 
 <body class="dashboard-analytics" id="body">
-
-    <!-- BEGIN LOADER -->
+   @livewireScripts(['nonce' => app('nonce')])
     <div id="load_screen">
         <div class="loader">
             <div class="loader-content">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" class="loader-logo">
                 <div class="spinner-grow align-self-center"></div>
             </div>
         </div>
     </div>
-    <!--  END LOADER -->
-
-    <!--  BEGIN NAVBAR  -->
     @include('layouts.theme.header')
-    <!--  END NAVBAR  -->
 
-    <!--  BEGIN MAIN CONTAINER  -->
     <div class="main-container" id="container">
 
         <div class="overlay"></div>
+
         <div class="search-overlay"></div>
-
-        <!--  BEGIN SIDEBAR  -->
         @include('layouts.theme.sidebar')
-        <!--  END SIDEBAR  -->
-
-        <!--  BEGIN CONTENT AREA  -->
         <div id="content" class="main-content">
-
             <div class="layout-px-spacing">
 
                 @yield('content')
-
             </div>
-
-
             @include('layouts.theme.footer')
         </div>
-        <!--  END CONTENT AREA  -->
-
-
     </div>
-    <!-- END MAIN CONTAINER -->
-
-    <!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
     @include('layouts.theme.scripts')
-    <!-- BEGIN PAGE LEVEL PLUGINS/CUSTOM SCRIPTS -->
-
+    @stack('scripts')
 </body>
+
 </html>

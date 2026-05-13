@@ -30,7 +30,25 @@
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover,
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle {
-    background: #f3f4f6;
+    background: #e9edf5 !important;
+    border: 1px solid #d7deea;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .sidebar-module-name-small,
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .sidebar-module-name-small {
+    color: #111827;
+    font-weight: 700;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .base-icons,
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .base-icons {
+    color: #2563eb;
+}
+
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > a.menu-toggle:hover .base-icons svg,
+.container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu.active > a.menu-toggle .base-icons svg {
+    stroke: #2563eb;
+    opacity: 1;
 }
 
 .container1 .cf-sidebar-shell #compactSidebar .menu-categories > li.menu > .feather-chevron-left {
@@ -114,19 +132,19 @@
 }
 
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-icons {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     margin-right: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    color: #4b5563;
     flex-shrink: 0;
 }
 
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list .base-icons svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
 }
 
 .container1 .cf-sidebar-shell #compact_submenuSidebar .submenu-list span {

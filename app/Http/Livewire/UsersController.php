@@ -2,10 +2,13 @@
 namespace App\Http\Livewire;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Throwable;
 use Livewire\TemporaryUploadedFile;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -117,8 +120,14 @@ class UsersController extends Component
 
             $this->resetUI();
             $this->emit('user-added', 'Usuario registrado');
-        } catch (\Throwable $e) {
-            $this->emit('user-withsales', 'No se pudo registrar el usuario');
+        } catch (Throwable $e) {
+            Log::error('Error al registrar usuario', [
+                'email' => $this->email,
+                'profile' => $this->profile,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->emit('user-withsales', $this->buildFailureMessage($e, 'registrar'));
         }
     }
 
@@ -148,8 +157,15 @@ class UsersController extends Component
 
             $this->resetUI();
             $this->emit('user-updated', 'Usuario actualizado');
-        } catch (\Throwable $e) {
-            $this->emit('user-withsales', 'No se pudo actualizar el usuario');
+        } catch (Throwable $e) {
+            Log::error('Error al actualizar usuario', [
+                'user_id' => $this->selected_id,
+                'email' => $this->email,
+                'profile' => $this->profile,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->emit('user-withsales', $this->buildFailureMessage($e, 'actualizar'));
         }
     }
 
@@ -270,5 +286,26 @@ class UsersController extends Component
         }
 
         return 'ACTIVE';
+    }
+
+    private function buildFailureMessage(Throwable $e, string $action): string
+    {
+        if ($e instanceof QueryException) {
+            $errorCode = $e->errorInfo[1] ?? null;
+
+            if ($errorCode === 1062) {
+                return "No se pudo {$action} el usuario: el correo ya existe.";
+            }
+
+            return "No se pudo {$action} el usuario por un conflicto en base de datos.";
+        }
+
+        $message = trim((string) $e->getMessage());
+
+        if ($message === '') {
+            return "No se pudo {$action} el usuario.";
+        }
+
+        return "No se pudo {$action} el usuario: {$message}";
     }
 }

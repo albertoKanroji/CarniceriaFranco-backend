@@ -27,7 +27,7 @@
             <div class="d-flex align-items-center w-100">
                 <div class="d-flex align-items-center flex-grow-1">
                     <a href="{{ url('home') }}" class="d-flex align-items-center mr-2" aria-label="Ir al inicio">
-                        <img src="{{ asset('assets/img/lara_logo.png') }}" alt="Logo" class="header-logo">
+                        <img src="{{ asset('images/logo.jpeg') }}" alt="Logo" class="header-logo">
                     </a>
 
                     <a href="javascript:void(0);" class="sidebarCollapse ml-2 mr-2" data-placement="bottom" aria-label="Abrir menu lateral">
