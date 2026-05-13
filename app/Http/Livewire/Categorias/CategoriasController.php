@@ -43,9 +43,14 @@ class CategoriasController extends Component
 
     public function render()
     {
-        $data = Category::when($this->search, function ($query) {
-            return $query->where('nombre', 'like', '%' . $this->search . '%');
-        })
+        $term = trim((string) $this->search);
+
+        $data = Category::query()
+            ->select(['id', 'nombre', 'descripcion', 'imagen', 'activo', 'orden'])
+            ->withCount('products')
+            ->when($term !== '', function ($query) use ($term) {
+                return $query->where('nombre', 'like', '%' . $term . '%');
+            })
             ->orderBy('orden', 'asc')
             ->paginate($this->pagination);
 

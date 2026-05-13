@@ -15,6 +15,8 @@ class VentasController extends Component
 {
     use WithPagination;
 
+    private $perPage = 10;
+
     public $search = '';
     public $filtroEstatus = '';
     public $filtroMetodoPago = '';
@@ -37,6 +39,11 @@ class VentasController extends Component
         'cancelSale' => 'cancelSale',
         'detailModalClosed' => 'closeDetail'
     ];
+
+    public function paginationView()
+    {
+        return 'vendor.livewire.bootstrap';
+    }
 
     public function mount()
     {
@@ -158,7 +165,7 @@ class VentasController extends Component
         $query = Sale::with(['customer', 'details'])->orderBy('fecha_venta', 'desc');
         $query = $this->applyFilters($query);
 
-        $ventas = $query->paginate(15);
+        $ventas = $query->paginate($this->perPage);
 
         // Calcular totales
         $totalesQuery = Sale::query();

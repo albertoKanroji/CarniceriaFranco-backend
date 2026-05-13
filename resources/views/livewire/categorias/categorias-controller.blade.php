@@ -62,7 +62,7 @@
                                         <h6>{{ $category->orden }}</h6>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge badge-info">{{ $category->products->count() }}</span>
+                                        <span class="badge badge-info">{{ $category->products_count }}</span>
                                     </td>
                                     <td class="text-center">
                                         @if ($category->activo)

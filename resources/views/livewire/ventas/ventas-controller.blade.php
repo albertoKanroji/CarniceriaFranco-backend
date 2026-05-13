@@ -170,7 +170,15 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $ventas->links() }}
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 px-2">
+                        <small class="text-muted mb-2 mb-md-0">
+                            Mostrando {{ $ventas->firstItem() ?? 0 }} - {{ $ventas->lastItem() ?? 0 }} de {{ $ventas->total() }} ventas
+                        </small>
+                        <div>
+                            {{ $ventas->links() }}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
