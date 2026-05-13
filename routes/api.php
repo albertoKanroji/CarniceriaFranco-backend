@@ -2,10 +2,8 @@
 
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\CustomersController;
-use App\Http\Controllers\GruposMuscularesControllerlAPI;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MercadoPagoController;
-use App\Http\Controllers\NotificacionesController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SalesController;
 use Illuminate\Http\Request;
@@ -120,14 +118,6 @@ Route::group(['middleware' => 'cors'], function () {
             Route::get('/venta-by-preference/{preferenceId}', [MercadoPagoController::class, 'getVentaByPreference']);
         });
 
-        Route::prefix('tags')->group(function () {
-
-            Route::get('/', [GruposMuscularesControllerlAPI::class, 'getTags']);
-        });
-        Route::prefix('notificaciones')->group(function () {
-
-            Route::get('/', [NotificacionesController::class, 'index']);
-        });
         Route::prefix('historial')->group(function () {
 
             Route::post('/guardar-accion', [LogController::class, 'store']);
