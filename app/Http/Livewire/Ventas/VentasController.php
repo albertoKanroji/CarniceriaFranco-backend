@@ -5,9 +5,11 @@ namespace App\Http\Livewire\Ventas;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Sale;
-use App\Models\SaleDetail;
 use App\Models\Customers;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class VentasController extends Component
 {
@@ -97,41 +99,46 @@ class VentasController extends Component
     public function cancelSale($saleId)
     {
         try {
-            $sale = Sale::with('details')->find($saleId);
+            DB::transaction(function () use ($saleId) {
+                $sale = Sale::with('details')->lockForUpdate()->find($saleId);
 
-            if (!$sale) {
-                $this->emit('sale-error', 'Venta no encontrada');
-                return;
-            }
-
-            if ($sale->estatus == 'cancelada') {
-                $this->emit('sale-error', 'La venta ya está cancelada');
-                return;
-            }
-
-            // Devolver stock a los productos
-            foreach ($sale->details as $detail) {
-                $product = Product::find($detail->product_id);
-                if ($product) {
-                    $product->stock += $detail->cantidad;
-                    $product->save();
+                if (!$sale) {
+                    throw new \RuntimeException('Venta no encontrada');
                 }
-            }
 
-            // Actualizar estadísticas del cliente
-            $customer = Customers::find($sale->customer_id);
-            if ($customer) {
-                $customer->total_compras -= $sale->total;
-                $customer->numero_compras -= 1;
-                $customer->save();
-            }
+                if ($sale->estatus === 'cancelada') {
+                    throw new \RuntimeException('La venta ya está cancelada');
+                }
 
-            // Cambiar estatus
-            $sale->estatus = 'cancelada';
-            $sale->save();
+                // Devolver stock a los productos
+                foreach ($sale->details as $detail) {
+                    $product = Product::find($detail->product_id);
+                    if ($product) {
+                        $product->stock += $detail->cantidad;
+                        $product->save();
+                    }
+                }
+
+                // Actualizar estadísticas del cliente
+                $customer = Customers::find($sale->customer_id);
+                if ($customer) {
+                    $customer->total_compras = max(0, (float) $customer->total_compras - (float) $sale->total);
+                    $customer->numero_compras = max(0, (int) $customer->numero_compras - 1);
+                    $customer->save();
+                }
+
+                // Cambiar estatus
+                $sale->estatus = 'cancelada';
+                $sale->save();
+            });
 
             $this->emit('sale-cancelled', 'Venta cancelada exitosamente');
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            Log::error('Error al cancelar venta', [
+                'sale_id' => $saleId,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->emit('sale-error', 'Error al cancelar la venta: ' . $e->getMessage());
         }
     }
@@ -179,7 +186,9 @@ class VentasController extends Component
 
     private function applyFilters($query)
     {
-        if ($this->search) {
+        $search = trim((string) $this->search);
+
+        if ($search !== '') {
             $query->where(function ($q) {
                 $q->where('folio', 'like', '%' . $this->search . '%')
                     ->orWhereHas('customer', function ($subQ) {

@@ -3,14 +3,26 @@ namespace App\Http\Livewire\Productos;
 
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Livewire\TemporaryUploadedFile;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Throwable;
 
 class ProductosController extends Component
 {
     use WithPagination;
     use WithFileUploads;
+
+    protected $listeners = [
+        'deleteRow' => 'destroy',
+        'resetUI'   => 'resetUI',
+    ];
 
     public $pageTitle, $componentName;
     private $pagination = 10;
@@ -49,14 +61,25 @@ class ProductosController extends Component
         return 'vendor.livewire.bootstrap';
     }
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterCategory()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $categories = Category::active()->ordered()->get();
+        $term = trim((string) $this->search);
 
-        $data = Product::with('category')
-            ->when($this->search, function ($query) {
-                return $query->where('nombre', 'like', '%' . $this->search . '%')
-                    ->orWhere('codigo', 'like', '%' . $this->search . '%');
+        $data = Product::query()
+            ->with('category')
+            ->when($term !== '', function ($query) use ($term) {
+                return $query->search($term);
             })
             ->when($this->filterCategory, function ($query) {
                 return $query->where('category_id', $this->filterCategory);
@@ -96,7 +119,6 @@ class ProductosController extends Component
         $this->cantidad_venta    = null;
         $this->resetValidation();
         $this->resetPage();
-
     }
     /**
      * Convierte un monto en pesos a gramos/kilos según el precio del producto.
@@ -106,16 +128,20 @@ class ProductosController extends Component
      */
     public function calcularCantidadPorMonto($monto, $precio, $unidad_venta)
     {
+        $monto = (float) $monto;
+        $precio = (float) $precio;
+
         if ($monto <= 0 || $precio <= 0) {
             return null;
         }
 
         if (in_array($unidad_venta, ['kilogramo', 'gramo'])) {
-                                             // Si el producto está en oferta, usar el precio de oferta
             $cantidad_kg = $monto / $precio; // cantidad en kilos
-            if ($unidad_venta == 'kilogramo') {
+            if ($unidad_venta === 'kilogramo') {
                 return round($cantidad_kg * 1000, 2); // gramos
-            } else if ($unidad_venta == 'gramo') {
+            }
+
+            if ($unidad_venta === 'gramo') {
                 return round($cantidad_kg * 1000, 2); // gramos
             }
         }
@@ -129,8 +155,22 @@ class ProductosController extends Component
      */
     public function updatedMontoVenta($value)
     {
-        $precio_final         = $this->en_oferta && $this->precio_oferta ? $this->precio_oferta : $this->precio;
+        $precio_final = $this->en_oferta && $this->precio_oferta ? $this->precio_oferta : $this->precio;
         $this->cantidad_venta = $this->calcularCantidadPorMonto($value, $precio_final, $this->unidad_venta);
+    }
+
+    public function updatedEnOferta($value)
+    {
+        if ((int) $value !== 1) {
+            $this->precio_oferta = null;
+        }
+    }
+
+    public function updatedRefrigerado($value)
+    {
+        if ((int) $value !== 1) {
+            $this->fecha_vencimiento = null;
+        }
     }
 
     /**
@@ -160,182 +200,237 @@ class ProductosController extends Component
         $this->activo            = $product->activo;
         $this->destacado         = $product->destacado;
         $this->refrigerado       = $product->refrigerado;
-        $this->fecha_vencimiento = $product->fecha_vencimiento ? $product->fecha_vencimiento->format('Y-m-d') : '';
+        $this->fecha_vencimiento = $product->fecha_vencimiento
+            ? date('Y-m-d', strtotime((string) $product->fecha_vencimiento))
+            : '';
         $this->etiquetas         = $product->etiquetas;
         $this->emit('show-modal', 'open!');
     }
 
     public function Store()
     {
-        $rules = [
-            'category_id'        => 'required|exists:categories,id',
-            'nombre'             => 'required|min:3',
-            'codigo'             => 'nullable|unique:products',
-            'precio'             => 'required|numeric|min:0',
-            'precio_oferta'      => 'nullable|numeric|min:0',
-            'unidad_venta'       => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
-            'stock'              => 'required|numeric|min:0',
-            'stock_minimo'       => 'required|numeric|min:0',
-            'fecha_vencimiento'  => 'required|date',
-        ];
+        $this->validate($this->rules(), $this->messages());
 
-        $messages = [
-            'category_id.required'       => 'Selecciona una categoría',
-            'category_id.exists'         => 'La categoría no existe',
-            'nombre.required'            => 'Ingresa el nombre del producto',
-            'nombre.min'                 => 'El nombre debe tener al menos 3 caracteres',
-            'codigo.unique'              => 'Este código ya existe',
-            'precio.required'            => 'Ingresa el precio',
-            'precio.numeric'             => 'El precio debe ser numérico',
-            'unidad_venta.required'      => 'Selecciona la unidad de venta',
-            'stock.required'             => 'Ingresa el stock',
-            'stock_minimo.required'      => 'Ingresa el stock mínimo',
-            'fecha_vencimiento.required' => 'Ingresa la fecha de vencimiento',
-            'fecha_vencimiento.date'     => 'La fecha de vencimiento debe ser una fecha válida',
-        ];
+        try {
+            $payload = $this->productPayload();
 
-        $this->validate($rules, $messages);
-
-        $imageName = null;
-        if ($this->imagen) {
-            // Crear directorio si no existe
-            $uploadPath = public_path('productos');
-            if (! file_exists($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+            if ($this->hasNewImage()) {
+                $payload['imagen'] = $this->storeImage();
             }
 
-            $fileName = uniqid() . '.' . $this->imagen->extension();
-            $tempFile = $this->imagen->getRealPath();
+            Product::create($payload);
 
-            // Mover el archivo usando copy y unlink para mejor compatibilidad
-            if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
-                $imageName = '/productos/' . $fileName; // Guardar la ruta completa en la BD
-            } else {
-                throw new \Exception('No se pudo guardar la imagen');
-            }
-        }Product::create([
-            'category_id'       => $this->category_id,
-            'codigo'            => $this->codigo,
-            'nombre'            => $this->nombre,
-            'descripcion'       => $this->descripcion,
-            'precio'            => $this->precio,
-            'precio_oferta'     => $this->precio_oferta,
-            'en_oferta'         => $this->en_oferta,
-            'unidad_venta'      => $this->unidad_venta,
-            'stock'             => $this->stock,
-            'stock_minimo'      => $this->stock_minimo,
-            'imagen'            => $imageName,
-            'peso_promedio'     => $this->peso_promedio,
-            'activo'            => $this->activo,
-            'destacado'         => $this->destacado,
-            'refrigerado'       => $this->refrigerado,
-            'fecha_vencimiento' => $this->fecha_vencimiento,
-            'etiquetas'         => $this->etiquetas,
-        ]);
+            $this->resetUI();
+            $this->emit('product-added', 'Producto registrado');
+        } catch (Throwable $e) {
+            Log::error('Error al registrar producto', [
+                'nombre' => $this->nombre,
+                'codigo' => $this->codigo,
+                'error' => $e->getMessage(),
+            ]);
 
-        $this->resetUI();
-        $this->emit('product-added', 'Producto Registrado');
+            $this->emit('product-error', $this->buildFailureMessage($e, 'registrar'));
+        }
     }
 
     public function Update()
     {
-        $rules = [
-            'category_id'        => 'required|exists:categories,id',
-            'nombre'             => 'required|min:3',
-            'codigo'             => 'nullable|unique:products,codigo,' . $this->selected_id,
-            'precio'             => 'required|numeric|min:0',
-            'precio_oferta'      => 'nullable|numeric|min:0',
-            'unidad_venta'       => 'required|in:kilogramo,gramo,pieza,paquete,caja,litro',
-            'stock'              => 'required|numeric|min:0',
-            'stock_minimo'       => 'required|numeric|min:0',
-            'fecha_vencimiento'  => 'required|date',
-        ];
-
-        $messages = [
-            'category_id.required'       => 'Selecciona una categoría',
-            'nombre.required'            => 'Ingresa el nombre del producto',
-            'precio.required'            => 'Ingresa el precio',
-            'fecha_vencimiento.required' => 'Ingresa la fecha de vencimiento',
-            'fecha_vencimiento.date'     => 'La fecha de vencimiento debe ser una fecha válida',
-        ];
-
-        $this->validate($rules, $messages);
+        $this->validate($this->rules($this->selected_id), $this->messages());
 
         try {
-            $product = Product::find($this->selected_id);
+            $product = Product::findOrFail($this->selected_id);
+            $previousImage = $product->imagen;
 
-            $imageName = $product->imagen;
-            if ($this->imagen) {
-                // Crear directorio si no existe
-                $uploadPath = public_path('productos');
-                if (! file_exists($uploadPath)) {
-                    mkdir($uploadPath, 0755, true);
-                }
+            $payload = $this->productPayload();
+            if ($this->hasNewImage()) {
+                $payload['imagen'] = $this->storeImage();
+            }
 
-                $fileName = uniqid() . '.' . $this->imagen->extension();
-                $tempFile = $this->imagen->getRealPath();
+            $product->update($payload);
 
-                // Mover el archivo usando copy
-                if (copy($tempFile, $uploadPath . DIRECTORY_SEPARATOR . $fileName)) {
-                    $imageName = '/productos/' . $fileName; // Guardar la ruta completa en la BD
-
-                    // Eliminar imagen anterior si existe
-                    if ($product->imagen) {
-                        $oldImagePath = public_path($product->imagen);
-                        if (file_exists($oldImagePath)) {
-                            unlink($oldImagePath);
-                        }
-                    }
-                } else {
-                    throw new \Exception('No se pudo actualizar la imagen');
-                }
-            }$product->update([
-                'category_id'       => $this->category_id,
-                'codigo'            => $this->codigo,
-                'nombre'            => $this->nombre,
-                'descripcion'       => $this->descripcion,
-                'precio'            => $this->precio,
-                'precio_oferta'     => $this->precio_oferta,
-                'en_oferta'         => $this->en_oferta,
-                'unidad_venta'      => $this->unidad_venta,
-                'stock'             => $this->stock,
-                'stock_minimo'      => $this->stock_minimo,
-                'imagen'            => $imageName,
-                'peso_promedio'     => $this->peso_promedio,
-                'activo'            => $this->activo,
-                'destacado'         => $this->destacado,
-                'refrigerado'       => $this->refrigerado,
-                'fecha_vencimiento' => $this->fecha_vencimiento,
-                'etiquetas'         => $this->etiquetas,
-            ]);
+            if ($this->hasNewImage() && $previousImage) {
+                $this->deleteImage($previousImage);
+            }
 
             $this->resetUI();
-            $this->emit('product-updated', 'Producto Actualizado');
-        } catch (\Exception $e) {
-            $this->emit('product-error', 'Error: ' . $e->getMessage());
+            $this->emit('product-updated', 'Producto actualizado');
+        } catch (Throwable $e) {
+            Log::error('Error al actualizar producto', [
+                'product_id' => $this->selected_id,
+                'nombre' => $this->nombre,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->emit('product-error', $this->buildFailureMessage($e, 'actualizar'));
         }
     }
-
-    protected $listeners = [
-        'deleteRow' => 'destroy',
-        'resetUI'   => 'resetUI',
-    ];
 
     public function destroy(Product $product)
     {
         try {
             if ($product->imagen) {
-                $imagePath = public_path($product->imagen);
-                if (file_exists($imagePath)) {
-                    unlink($imagePath);
-                }
+                $this->deleteImage($product->imagen);
             }
 
             $product->delete();
             $this->resetUI();
             $this->emit('product-deleted', 'Producto eliminado con éxito');
-        } catch (\Exception $e) {
-            $this->emit('product-error', 'Error al eliminar: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            Log::error('Error al eliminar producto', [
+                'product_id' => $product->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->emit('product-error', $this->buildFailureMessage($e, 'eliminar'));
         }
+    }
+
+    private function rules(int $ignoreId = 0): array
+    {
+        return [
+            'category_id' => ['required', 'exists:categories,id'],
+            'nombre' => ['required', 'string', 'min:3', 'max:120'],
+            'codigo' => ['nullable', 'string', 'max:50', Rule::unique('products', 'codigo')->ignore($ignoreId)],
+            'descripcion' => ['nullable', 'string', 'max:500'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'precio_oferta' => ['nullable', 'required_if:en_oferta,1', 'numeric', 'min:0'],
+            'en_oferta' => ['required', 'boolean'],
+            'unidad_venta' => ['required', Rule::in(['kilogramo', 'gramo', 'pieza', 'paquete', 'caja', 'litro'])],
+            'stock' => ['required', 'numeric', 'min:0'],
+            'stock_minimo' => ['required', 'numeric', 'min:0'],
+            'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'peso_promedio' => ['nullable', 'numeric', 'min:0'],
+            'activo' => ['required', 'boolean'],
+            'destacado' => ['required', 'boolean'],
+            'refrigerado' => ['required', 'boolean'],
+            'fecha_vencimiento' => ['nullable', 'required_if:refrigerado,1', 'date'],
+            'etiquetas' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    private function messages(): array
+    {
+        return [
+            'category_id.required' => 'Selecciona una categoría',
+            'category_id.exists' => 'La categoría no existe',
+            'nombre.required' => 'Ingresa el nombre del producto',
+            'nombre.min' => 'El nombre debe tener al menos 3 caracteres',
+            'codigo.unique' => 'Este código ya existe',
+            'precio.required' => 'Ingresa el precio',
+            'precio.numeric' => 'El precio debe ser numérico',
+            'precio_oferta.numeric' => 'El precio de oferta debe ser numérico',
+            'precio_oferta.required_if' => 'Ingresa el precio de oferta cuando el producto esté en oferta',
+            'unidad_venta.required' => 'Selecciona la unidad de venta',
+            'stock.required' => 'Ingresa el stock',
+            'stock_minimo.required' => 'Ingresa el stock mínimo',
+            'imagen.image' => 'El archivo debe ser una imagen válida',
+            'imagen.mimes' => 'La imagen debe ser JPG, JPEG, PNG, GIF o WEBP',
+            'imagen.max' => 'La imagen no puede superar 2MB',
+            'fecha_vencimiento.required_if' => 'Ingresa la fecha de vencimiento para productos refrigerados',
+            'fecha_vencimiento.date' => 'La fecha de vencimiento debe ser una fecha válida',
+        ];
+    }
+
+    private function productPayload(): array
+    {
+        return [
+            'category_id' => (int) $this->category_id,
+            'codigo' => $this->normalizeNullableText($this->codigo),
+            'nombre' => trim((string) $this->nombre),
+            'descripcion' => $this->normalizeNullableText($this->descripcion),
+            'precio' => (float) $this->precio,
+            'precio_oferta' => $this->normalizeNullableNumber($this->precio_oferta),
+            'en_oferta' => (bool) $this->en_oferta,
+            'unidad_venta' => $this->unidad_venta,
+            'stock' => (float) $this->stock,
+            'stock_minimo' => (float) $this->stock_minimo,
+            'peso_promedio' => $this->normalizeNullableNumber($this->peso_promedio),
+            'activo' => (bool) $this->activo,
+            'destacado' => (bool) $this->destacado,
+            'refrigerado' => (bool) $this->refrigerado,
+            'fecha_vencimiento' => $this->fecha_vencimiento,
+            'etiquetas' => $this->normalizeNullableText($this->etiquetas),
+        ];
+    }
+
+    private function storeImage(): string
+    {
+        if (! $this->hasNewImage()) {
+            throw new \RuntimeException('No hay imagen válida para almacenar.');
+        }
+
+        $fileName = Str::uuid() . '.' . strtolower($this->imagen->getClientOriginalExtension());
+        $path = $this->imagen->storeAs('productos', $fileName, 'public');
+
+        return $path;
+    }
+
+    private function hasNewImage(): bool
+    {
+        return $this->imagen instanceof TemporaryUploadedFile;
+    }
+
+    private function deleteImage(string $image): void
+    {
+        $normalized = ltrim($image, '/');
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            $normalized = Str::after($normalized, 'storage/');
+        }
+
+        $paths = [];
+
+        if (Str::contains($normalized, '/')) {
+            $paths[] = $normalized;
+        } else {
+            $paths[] = 'productos/' . $normalized;
+        }
+
+        foreach (array_unique($paths) as $path) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            $legacyPath = public_path($path);
+            if (file_exists($legacyPath)) {
+                @unlink($legacyPath);
+            }
+        }
+    }
+
+    private function normalizeNullableText($value): ?string
+    {
+        $value = trim((string) ($value ?? ''));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeNullableNumber($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
+    private function buildFailureMessage(Throwable $e, string $action): string
+    {
+        if ($e instanceof QueryException) {
+            $errorCode = $e->errorInfo[1] ?? null;
+
+            if ($errorCode === 1062) {
+                return "No se pudo {$action} el producto: el código ya existe.";
+            }
+
+            return "No se pudo {$action} el producto por un conflicto en base de datos.";
+        }
+
+        $message = trim((string) $e->getMessage());
+        if ($message === '') {
+            return "No se pudo {$action} el producto.";
+        }
+
+        return "No se pudo {$action} el producto: {$message}";
     }
 }

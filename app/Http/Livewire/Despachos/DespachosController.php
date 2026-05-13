@@ -11,6 +11,8 @@ use App\Models\Customers;
 use Carbon\Carbon;
 use App\Services\OrderNotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DespachosController extends Component
 {
@@ -40,7 +42,7 @@ class DespachosController extends Component
         'closeModal' => 'closeModal',
         'closeCreateOrderModal' => 'closeCreateOrderModal',
         'createOrderModalClosed' => 'closeCreateOrderModal',
-        'despachoModalClosed' => 'closeModal'
+        'despachoModalClosed' => 'closeModal',
     ];
 
     public function mount()
@@ -191,112 +193,70 @@ class DespachosController extends Component
 
     public function createOrder()
     {
-        if (!$this->createCustomerId) {
-            $this->emit('despacho-error', 'Selecciona un cliente');
+        $validationError = $this->validateCreateOrderInputs();
+        if ($validationError !== null) {
+            $this->emit('despacho-error', $validationError);
             return;
         }
-
-        if (count($this->cart) === 0) {
-            $this->emit('despacho-error', 'Agrega productos al carrito');
-            return;
-        }
-
-        if (!in_array($this->createMetodoPago, ['efectivo', 'tarjeta', 'transferencia', 'credito'], true)) {
-            $this->emit('despacho-error', 'Metodo de pago no valido');
-            return;
-        }
-
-        DB::beginTransaction();
 
         try {
-            $subtotal = 0;
-            $detalles = [];
+            $sale = DB::transaction(function () {
+                [$subtotal, $detalles] = $this->resolveOrderDetails();
 
-            foreach ($this->cart as $item) {
-                $product = Product::find($item['product_id']);
-
-                if (!$product || !$product->activo) {
-                    throw new \Exception('Producto no disponible: ' . ($item['nombre'] ?? 'N/A'));
+                $descuento = max(0, (float) ($this->createDescuento ?? 0));
+                if ($descuento > $subtotal) {
+                    $descuento = $subtotal;
                 }
 
-                $qty = (float) $item['cantidad'];
-                if ($qty <= 0) {
-                    throw new \Exception('Cantidad invalida para ' . $product->nombre);
-                }
+                $impuestos = ($subtotal - $descuento) * 0.16;
+                $total = $subtotal - $descuento + $impuestos;
 
-                if ((float) $product->stock < $qty) {
-                    throw new \Exception('Stock insuficiente para ' . $product->nombre . '. Disponible: ' . $product->stock);
-                }
-
-                $precioUnitario = (float) $product->precio;
-                $precioOferta = $product->en_oferta ? (float) $product->precio_oferta : null;
-                $precioFinal = $precioOferta ?? $precioUnitario;
-                $itemSubtotal = $precioFinal * $qty;
-
-                $subtotal += $itemSubtotal;
-
-                $detalles[] = [
-                    'product' => $product,
-                    'cantidad' => $qty,
-                    'precio_unitario' => $precioUnitario,
-                    'precio_oferta' => $precioOferta,
-                    'subtotal' => $itemSubtotal,
-                ];
-            }
-
-            $descuento = max(0, (float) ($this->createDescuento ?? 0));
-            if ($descuento > $subtotal) {
-                $descuento = $subtotal;
-            }
-
-            $impuestos = ($subtotal - $descuento) * 0.16;
-            $total = $subtotal - $descuento + $impuestos;
-
-            $sale = Sale::create([
-                'customer_id' => $this->createCustomerId,
-                'fecha_venta' => now(),
-                'subtotal' => $subtotal,
-                'descuento' => $descuento,
-                'impuestos' => $impuestos,
-                'total' => $total,
-                'metodo_pago' => $this->createMetodoPago,
-                'estatus' => 'completada',
-                'notas' => $this->createNotas,
-                'estado_envio' => 'Pendiente',
-                'usuario_id' => auth()->id(),
-            ]);
-
-            foreach ($detalles as $detalle) {
-                $product = $detalle['product'];
-
-                SaleDetail::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $product->id,
-                    'cantidad' => $detalle['cantidad'],
-                    'monto_pesos' => null,
-                    'precio_unitario' => $detalle['precio_unitario'],
-                    'precio_oferta' => $detalle['precio_oferta'],
-                    'descuento' => 0,
-                    'subtotal' => $detalle['subtotal'],
-                    'total' => $detalle['subtotal'],
-                    'producto_nombre' => $product->nombre,
-                    'producto_codigo' => $product->codigo,
-                    'unidad_venta' => $product->unidad_venta,
-                    'estado_despacho' => 0,
+                $sale = Sale::create([
+                    'customer_id' => $this->createCustomerId,
+                    'fecha_venta' => now(),
+                    'subtotal' => $subtotal,
+                    'descuento' => $descuento,
+                    'impuestos' => $impuestos,
+                    'total' => $total,
+                    'metodo_pago' => $this->createMetodoPago,
+                    'estatus' => 'completada',
+                    'notas' => $this->createNotas,
+                    'estado_envio' => 'Pendiente',
+                    'usuario_id' => auth()->id(),
                 ]);
 
-                $product->decrement('stock', $detalle['cantidad']);
-            }
+                foreach ($detalles as $detalle) {
+                    $product = $detalle['product'];
 
-            $customer = Customers::find($this->createCustomerId);
-            if ($customer) {
-                $customer->total_compras = (float) ($customer->total_compras ?? 0) + $total;
-                $customer->numero_compras = (int) ($customer->numero_compras ?? 0) + 1;
-                $customer->fecha_ultima_compra = now();
-                $customer->save();
-            }
+                    SaleDetail::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $product->id,
+                        'cantidad' => $detalle['cantidad'],
+                        'monto_pesos' => null,
+                        'precio_unitario' => $detalle['precio_unitario'],
+                        'precio_oferta' => $detalle['precio_oferta'],
+                        'descuento' => 0,
+                        'subtotal' => $detalle['subtotal'],
+                        'total' => $detalle['subtotal'],
+                        'producto_nombre' => $product->nombre,
+                        'producto_codigo' => $product->codigo,
+                        'unidad_venta' => $product->unidad_venta,
+                        'estado_despacho' => 0,
+                    ]);
 
-            DB::commit();
+                    $product->decrement('stock', $detalle['cantidad']);
+                }
+
+                $customer = Customers::find($this->createCustomerId);
+                if ($customer) {
+                    $customer->total_compras = (float) ($customer->total_compras ?? 0) + $total;
+                    $customer->numero_compras = (int) ($customer->numero_compras ?? 0) + 1;
+                    $customer->fecha_ultima_compra = now();
+                    $customer->save();
+                }
+
+                return $sale;
+            });
 
             OrderNotificationService::sendPurchaseCompletedNotification($sale);
 
@@ -304,8 +264,13 @@ class DespachosController extends Component
             $this->emit('hide-create-order-modal');
             $this->resetCreateOrderForm();
             $this->resetPage();
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (Throwable $e) {
+            Log::error('Error al crear pedido desde despachos', [
+                'customer_id' => $this->createCustomerId,
+                'metodo_pago' => $this->createMetodoPago,
+                'error' => $e->getMessage(),
+            ]);
+
             $this->emit('despacho-error', 'Error al crear pedido: ' . $e->getMessage());
         }
     }
@@ -394,9 +359,11 @@ class DespachosController extends Component
                 return;
             }
 
-            // Obtener el estado anterior de la venta
             $sale = Sale::find($detail->sale_id);
-            $estadoAnterior = $sale->estado_envio;
+            if (!$sale) {
+                $this->emit('despacho-error', 'Venta no encontrada');
+                return;
+            }
 
             // Cambiar estado del producto
             $detail->estado_despacho = $detail->estado_despacho ? 0 : 1;
@@ -423,7 +390,11 @@ class DespachosController extends Component
             // Recargar detalles
             $this->loadSaleDetails();
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            Log::error('Error al actualizar estado de despacho', [
+                'detail_id' => $detailId,
+                'error' => $e->getMessage(),
+            ]);
             $this->emit('despacho-error', 'Error: ' . $e->getMessage());
         } finally {
             $this->updatingDetailId = null;
@@ -468,7 +439,11 @@ class DespachosController extends Component
                 $this->emit('pedido-enviado', 'Pedido enviado exitosamente (email no enviado - verificar datos del cliente)');
             }
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            Log::error('Error al enviar pedido', [
+                'sale_id' => $this->selectedSaleId,
+                'error' => $e->getMessage(),
+            ]);
             $this->emit('despacho-error', 'Error al enviar pedido: ' . $e->getMessage());
         }
     }
@@ -479,31 +454,7 @@ class DespachosController extends Component
             ->whereIn('estado_envio', ['Pendiente', 'Procesando', 'Listo_para_enviar'])
             ->orderBy('fecha_venta', 'asc'); // Más viejas primero
 
-        // Compatibilidad con búsqueda general
-        if ($this->search) {
-            $query->where(function($q) {
-                $q->where('folio', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('customer', function($subQ) {
-                      $subQ->where('nombre', 'like', '%' . $this->search . '%')
-                           ->orWhere('apellido', 'like', '%' . $this->search . '%');
-                  });
-            });
-        }
-
-        if ($this->filtroFolio) {
-            $query->where('folio', 'like', '%' . $this->filtroFolio . '%');
-        }
-
-        if ($this->filtroCliente) {
-            $query->whereHas('customer', function ($subQ) {
-                $subQ->where('nombre', 'like', '%' . $this->filtroCliente . '%')
-                    ->orWhere('apellido', 'like', '%' . $this->filtroCliente . '%');
-            });
-        }
-
-        if ($this->filtroEstado) {
-            $query->where('estado_envio', $this->filtroEstado);
-        }
+        $query = $this->applyFilters($query);
 
         $ventas = $query->paginate(15);
 
@@ -520,12 +471,14 @@ class DespachosController extends Component
             ->limit(300)
             ->get(['id', 'nombre', 'apellido']);
 
+        $productSearchTerm = trim((string) $this->productSearch);
+
         $products = Product::where('activo', true)
-            ->where(function ($query) {
-                if (trim($this->productSearch) !== '') {
-                    $query->where('codigo', 'like', '%' . $this->productSearch . '%')
-                        ->orWhere('nombre', 'like', '%' . $this->productSearch . '%');
-                }
+            ->when($productSearchTerm !== '', function ($query) use ($productSearchTerm) {
+                $query->where(function ($subQ) use ($productSearchTerm) {
+                    $subQ->where('codigo', 'like', '%' . $productSearchTerm . '%')
+                        ->orWhere('nombre', 'like', '%' . $productSearchTerm . '%');
+                });
             })
             ->orderBy('nombre')
             ->limit(25)
@@ -538,5 +491,96 @@ class DespachosController extends Component
             'products' => $products,
         ])->extends('layouts.theme.app')
             ->section('content');
+    }
+
+    private function validateCreateOrderInputs(): ?string
+    {
+        if (!$this->createCustomerId) {
+            return 'Selecciona un cliente';
+        }
+
+        if (count($this->cart) === 0) {
+            return 'Agrega productos al carrito';
+        }
+
+        if (!in_array($this->createMetodoPago, ['efectivo', 'tarjeta', 'transferencia', 'credito'], true)) {
+            return 'Metodo de pago no valido';
+        }
+
+        return null;
+    }
+
+    private function resolveOrderDetails(): array
+    {
+        $subtotal = 0;
+        $detalles = [];
+
+        foreach ($this->cart as $item) {
+            $product = Product::find($item['product_id']);
+
+            if (!$product || !$product->activo) {
+                throw new \RuntimeException('Producto no disponible: ' . ($item['nombre'] ?? 'N/A'));
+            }
+
+            $qty = (float) $item['cantidad'];
+            if ($qty <= 0) {
+                throw new \RuntimeException('Cantidad invalida para ' . $product->nombre);
+            }
+
+            if ((float) $product->stock < $qty) {
+                throw new \RuntimeException('Stock insuficiente para ' . $product->nombre . '. Disponible: ' . $product->stock);
+            }
+
+            $precioUnitario = (float) $product->precio;
+            $precioOferta = $product->en_oferta ? (float) $product->precio_oferta : null;
+            $precioFinal = $precioOferta ?? $precioUnitario;
+            $itemSubtotal = $precioFinal * $qty;
+
+            $subtotal += $itemSubtotal;
+
+            $detalles[] = [
+                'product' => $product,
+                'cantidad' => $qty,
+                'precio_unitario' => $precioUnitario,
+                'precio_oferta' => $precioOferta,
+                'subtotal' => $itemSubtotal,
+            ];
+        }
+
+        return [$subtotal, $detalles];
+    }
+
+    private function applyFilters($query)
+    {
+        $searchTerm = trim((string) $this->search);
+        $filtroFolio = trim((string) $this->filtroFolio);
+        $filtroCliente = trim((string) $this->filtroCliente);
+
+        if ($searchTerm !== '') {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('folio', 'like', '%' . $searchTerm . '%')
+                    ->orWhereHas('customer', function ($subQ) use ($searchTerm) {
+                        $subQ->where('nombre', 'like', '%' . $searchTerm . '%')
+                            ->orWhere('apellido', 'like', '%' . $searchTerm . '%');
+                    });
+            });
+        }
+
+        if ($filtroFolio !== '') {
+            $query->where('folio', 'like', '%' . $filtroFolio . '%');
+        }
+
+        if ($filtroCliente !== '') {
+            $query->whereHas('customer', function ($subQ) use ($filtroCliente) {
+                $subQ->where('nombre', 'like', '%' . $filtroCliente . '%')
+                    ->orWhere('apellido', 'like', '%' . $filtroCliente . '%');
+            });
+        }
+
+        if ($this->filtroEstado) {
+            $query->where('estado_envio', $this->filtroEstado);
+        }
+
+        return $query;
     }
 }

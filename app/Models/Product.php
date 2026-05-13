@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -84,6 +86,10 @@ class Product extends Model
 
         $image = trim((string) $this->imagen);
 
+        if (str_starts_with($image, 'data:image')) {
+            return $image;
+        }
+
         // Si viene apuntando a localhost/127, forzar imagen por defecto.
         if (str_contains($image, '127.0.0.1') || str_contains($image, 'localhost')) {
             return $defaultImageUrl;
@@ -94,10 +100,31 @@ class Product extends Model
             return $image;
         }
 
-        // Resolver ruta local relativa dentro de /public.
+        // Resolver ruta local relativa dentro de /public o /storage.
         $relativePath = ltrim($image, '/');
+
+        if (str_starts_with($relativePath, 'storage/')) {
+            $storagePath = Str::after($relativePath, 'storage/');
+
+            if (Storage::disk('public')->exists($storagePath)) {
+                return Storage::url($storagePath);
+            }
+
+            if (file_exists(public_path($relativePath))) {
+                return url('/' . $relativePath);
+            }
+        }
+
+        if (Storage::disk('public')->exists($relativePath)) {
+            return Storage::url($relativePath);
+        }
+
         if (!str_starts_with($relativePath, 'productos/')) {
             $relativePath = 'productos/' . $relativePath;
+        }
+
+        if (Storage::disk('public')->exists($relativePath)) {
+            return Storage::url($relativePath);
         }
 
         if (file_exists(public_path($relativePath))) {
