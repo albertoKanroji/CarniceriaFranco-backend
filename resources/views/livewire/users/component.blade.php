@@ -44,12 +44,22 @@
                                 </td>
 
                                 <td class="text-center">
-                                 @if($r->image != null)
-                                 <img class="card-img-top img-fluid"
-                                 src="{{ asset('storage/users/'.$r->image) }}"
-                                 >
-                                 @endif
-                             </td>
+                                    @if($r->image)
+                                        @php
+                                            $rawImage = (string) $r->image;
+                                            $imageSrc = str_starts_with($rawImage, 'data:image')
+                                                ? $rawImage
+                                                : (str_contains($rawImage, 'users/')
+                                                    ? \Illuminate\Support\Facades\Storage::url($rawImage)
+                                                    : asset('storage/users/' . $rawImage));
+                                        @endphp
+                                        <img
+                                            src="{{ $imageSrc }}"
+                                            alt="Foto de {{ $r->name }}"
+                                            style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;"
+                                        >
+                                    @endif
+                                </td>
 
                              <td class="text-center">
                                 <a href="javascript:void(0)"

@@ -4,6 +4,19 @@
     $hasTwoFactorMethod = $user && method_exists($user, 'hasTwoFactorAuthEnabled');
     $hasTwoFactorEnabled = $hasTwoFactorMethod ? $user->hasTwoFactorAuthEnabled() : false;
     $canDisableTwoFactor = \Illuminate\Support\Facades\Route::has('2fa.disable');
+    $userImageUrl = null;
+
+    if ($user && $user->image) {
+        $rawImage = (string) $user->image;
+
+        if (str_starts_with($rawImage, 'data:image')) {
+            $userImageUrl = $rawImage;
+        } elseif (str_contains($rawImage, 'users/')) {
+            $userImageUrl = \Illuminate\Support\Facades\Storage::url($rawImage);
+        } else {
+            $userImageUrl = asset('storage/users/' . $rawImage);
+        }
+    }
 @endphp
 
 <link href="{{ asset('assets/css/app/header.css') }}" rel="stylesheet" type="text/css" nonce="{{ $nonce }}" />
@@ -34,12 +47,8 @@
                 </div>
 
                 <div class="ml-auto d-flex align-items-center user-profile-header">
-                    @if($user && $user->image)
-                        @if(str_contains($user->image, 'users/'))
-                            <img class="img-fluid rounded-circle mr-2" src="{{ Storage::url($user->image) }}" alt="avatar">
-                        @else
-                            <img class="img-fluid rounded-circle mr-2" src="data:image/png;base64,{{ $user->image }}" alt="avatar">
-                        @endif
+                    @if($userImageUrl)
+                        <img class="img-fluid rounded-circle mr-2" src="{{ $userImageUrl }}" alt="avatar">
                     @else
                         <div class="avatar-fallback rounded-circle mr-2">
                             <i class="fas fa-user"></i>
