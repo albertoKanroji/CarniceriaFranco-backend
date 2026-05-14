@@ -10,12 +10,16 @@
                 </button>
             </div>
 
-            <div class="modal-body">
+            <div class="modal-body create-order-body">
+                <div class="alert alert-light border mb-3">
+                    <strong>Flujo:</strong> 1) Completa los datos del pedido, 2) busca y agrega productos, 3) valida el carrito y guarda.
+                </div>
+
                 <div class="row">
                     <div class="col-lg-5 col-md-12 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h6 class="mb-3"><i class="fas fa-user"></i> Datos del pedido</h6>
+                                <h6 class="mb-3 section-title"><span class="step-dot">1</span> <i class="fas fa-user"></i> Datos del pedido</h6>
 
                                 <div class="form-group">
                                     <label>Cliente</label>
@@ -28,7 +32,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Metodo de pago</label>
+                                    <label>Método de pago</label>
                                     <select wire:model="createMetodoPago" class="form-control">
                                         <option value="efectivo">Efectivo</option>
                                         <option value="tarjeta">Tarjeta</option>
@@ -53,24 +57,25 @@
                     <div class="col-lg-7 col-md-12 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h6 class="mb-3"><i class="fas fa-search"></i> Buscar productos</h6>
+                                <h6 class="mb-3 section-title"><span class="step-dot">2</span> <i class="fas fa-search"></i> Buscar productos</h6>
 
                                 <div class="form-group">
                                     <input type="text"
                                            wire:model.debounce.300ms="productSearch"
                                            class="form-control"
-                                           placeholder="Buscar por codigo o nombre...">
+                                           placeholder="Buscar por código o nombre...">
+                                    <small class="text-muted d-block mt-1">Selecciona productos con el botón + para agregarlos al carrito.</small>
                                 </div>
 
                                 <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
                                     <table class="table table-sm table-striped mb-0">
                                         <thead class="thead-dark" style="position: sticky; top: 0; z-index: 1;">
                                             <tr>
-                                                <th>Codigo</th>
+                                                <th>Código</th>
                                                 <th>Producto</th>
                                                 <th class="text-right">Precio</th>
                                                 <th class="text-center">Stock</th>
-                                                <th class="text-center">Accion</th>
+                                                <th class="text-center">Acción</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -122,7 +127,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0"><i class="fas fa-shopping-cart"></i> Carrito</h6>
+                            <h6 class="mb-0 section-title"><span class="step-dot">3</span> <i class="fas fa-shopping-cart"></i> Carrito</h6>
                             <span class="badge badge-info">{{ $this->cartProductsCount }} unidades</span>
                         </div>
 
@@ -195,7 +200,7 @@
                                 </div>
                                 <hr>
                                 <div class="d-flex justify-content-between">
-                                    <span>Total:</span>
+                                    <span>Total final:</span>
                                     <h5 class="mb-0 text-success"><strong>${{ number_format($this->cartTotal, 2) }}</strong></h5>
                                 </div>
                             </div>
@@ -230,5 +235,37 @@
 
     #createOrderModal + .modal-backdrop.show {
         z-index: 1205 !important;
+    }
+
+    #createOrderModal .modal-content {
+        border: 0;
+        border-radius: 10px;
+    }
+
+    .create-order-body {
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #2f3542;
+    }
+
+    .step-dot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #28a745;
+        color: #fff;
+        font-size: 12px;
+        margin-right: 6px;
+    }
+
+    #createOrderModal .modal-footer {
+        justify-content: space-between;
     }
 </style>

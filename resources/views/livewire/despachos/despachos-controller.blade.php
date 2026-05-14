@@ -7,54 +7,66 @@
                 </h4>
             </div>
 
-            <div class="row justify-content-between align-items-start">
-                <div class="col-lg-9 col-md-12 col-sm-12">
-                    <div class="row">
-                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
-                            <label class="text-muted" style="font-size: 12px;">Folio</label>
-                            <input type="text" wire:model="filtroFolio" placeholder="Buscar folio..." class="form-control">
+            <div class="widget-content pt-2">
+                <div class="card border-0 shadow-sm mb-3 despachos-toolbar">
+                    <div class="card-body pb-2">
+                        <div class="row align-items-end">
+                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Folio</label>
+                                <input type="text" wire:model="filtroFolio" placeholder="Buscar folio..." class="form-control">
+                            </div>
+                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Cliente</label>
+                                <input type="text" wire:model="filtroCliente" placeholder="Buscar cliente..." class="form-control">
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Estado</label>
+                                <select wire:model="filtroEstado" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Procesando">Procesando</option>
+                                    <option value="Listo_para_enviar">Listo para enviar</option>
+                                </select>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Registros</label>
+                                <select wire:model="perPage" class="form-control">
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex">
+                                <button wire:click="clearFilters" class="btn btn-dark btn-block">
+                                    <i class="fas fa-redo"></i> Limpiar
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-                            <label class="text-muted" style="font-size: 12px;">Cliente</label>
-                            <input type="text" wire:model="filtroCliente" placeholder="Buscar cliente..." class="form-control">
-                        </div>
-                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
-                            <label class="text-muted" style="font-size: 12px;">Estado</label>
-                            <select wire:model="filtroEstado" class="form-control">
-                                <option value="">Todos</option>
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Procesando">Procesando</option>
-                                <option value="Listo_para_enviar">Listo para enviar</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-6 col-sm-12 mb-3 d-flex align-items-end">
-                            <button wire:click="clearFilters" class="btn btn-dark btn-block">
-                                <i class="fas fa-redo"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-12 col-sm-12">
-                    <div class="d-flex justify-content-end align-items-center flex-wrap">
-                        <button class="btn btn-success mr-2 mb-2"
-                                wire:click="openCreateOrderModal"
-                                wire:loading.attr="disabled"
-                                wire:target="openCreateOrderModal">
-                            <span wire:loading.remove wire:target="openCreateOrderModal">
-                                <i class="fas fa-cart-plus"></i> Crear pedido
-                            </span>
-                            <span wire:loading wire:target="openCreateOrderModal">
-                                <i class="fas fa-spinner fa-spin"></i> Abriendo...
-                            </span>
-                        </button>
-                        <span class="badge badge-warning" style="font-size: 12px; margin-right: 10px;">
-                            <i class="fas fa-exclamation-triangle"></i> Urgente: +3 horas
-                        </span>
-                    </div>
-                </div>
-            </div>
 
-            <div class="widget-content">
+                        <div class="row align-items-center pt-1">
+                            <div class="col-md-7 col-sm-12 mb-2 mb-md-0">
+                                <span class="badge badge-warning px-3 py-2">
+                                    <i class="fas fa-exclamation-triangle"></i> Urgente: +3 horas
+                                </span>
+                            </div>
+                            <div class="col-md-5 col-sm-12 text-md-right text-left">
+                                <button class="btn btn-success"
+                                        wire:click="openCreateOrderModal"
+                                        wire:loading.attr="disabled"
+                                        wire:target="openCreateOrderModal">
+                                    <span wire:loading.remove wire:target="openCreateOrderModal">
+                                        <i class="fas fa-cart-plus"></i> Crear pedido
+                                    </span>
+                                    <span wire:loading wire:target="openCreateOrderModal">
+                                        <i class="fas fa-spinner fa-spin"></i> Abriendo...
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped mt-1">
                         <thead style="background: #3B3F5C">
@@ -145,7 +157,15 @@
                             @endforelse
                         </tbody>
                     </table>
-                    {{ $ventas->links() }}
+                </div>
+
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mt-3 pagination-wrapper">
+                    <div class="text-muted mb-2 mb-md-0">
+                        Mostrando {{ $ventas->firstItem() ?? 0 }} a {{ $ventas->lastItem() ?? 0 }} de {{ $ventas->total() }} pedidos
+                    </div>
+                    <div>
+                        {{ $ventas->onEachSide(1)->links() }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -158,6 +178,20 @@
     @keyframes blink {
         0%, 50% { background-color: #f8d7da; }
         51%, 100% { background-color: #ffffff; }
+    }
+
+    .despachos-toolbar {
+        border-radius: 10px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .pagination-wrapper {
+        gap: 10px;
     }
 
     .table-success {

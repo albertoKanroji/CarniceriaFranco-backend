@@ -25,6 +25,7 @@ class DespachosController extends Component
     public $filtroEstado = '';
     public $filtroCliente = '';
     public $filtroFolio = '';
+    public $perPage = 15;
     public $updatingDetailId = null;
 
     // Crear pedido
@@ -73,6 +74,15 @@ class DespachosController extends Component
 
     public function updatingFiltroFolio()
     {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage($value)
+    {
+        $allowed = [10, 15, 25, 50];
+        $value = (int) $value;
+
+        $this->perPage = in_array($value, $allowed, true) ? $value : 15;
         $this->resetPage();
     }
 
@@ -456,7 +466,7 @@ class DespachosController extends Component
 
         $query = $this->applyFilters($query);
 
-        $ventas = $query->paginate(15);
+        $ventas = $query->paginate((int) $this->perPage);
 
         // Calcular urgencias (más de 3 horas)
         $ventasUrgentes = [];

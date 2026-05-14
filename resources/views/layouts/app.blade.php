@@ -2,24 +2,46 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <link rel="icon" type="image/x-icon"
-        "{{ asset('images/logo.jpeg') }}" />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @php
+        $seoTitle = trim($__env->yieldContent('title')) ?: 'Carniceria Franco';
+        $seoDescription = trim($__env->yieldContent('meta_description')) ?: 'Carniceria Franco: carne fresca, productos de calidad y atencion personalizada.';
+        $seoImage = trim($__env->yieldContent('meta_image')) ?: asset('images/logo.jpeg');
+        $canonicalUrl = trim($__env->yieldContent('canonical_url')) ?: url()->current();
+    @endphp
 
-    <title>Carniceria Franco</title>
+    <title>{{ $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="{{ asset('js/app.js') }}" defer></script>
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo.jpeg') }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Carniceria Franco">
+    <meta property="og:locale" content="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
+
+    <script src="{{ mix('js/app.js') }}" defer></script>
 
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    @stack('head')
 </head>
 
 <body>
 
     <div id="app">
-        <script src="{{ mix('js/app.js') }}"></script>
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
