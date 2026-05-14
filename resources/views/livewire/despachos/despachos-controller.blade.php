@@ -277,4 +277,31 @@
             timeout: 3000
         }).show();
     }
+
+    function confirmCloseCreateOrderModal() {
+        const closeModal = () => {
+            window.livewire.emit('hide-create-order-modal');
+        };
+
+        if (typeof Swal !== 'undefined' && Swal.fire) {
+            Swal.fire({
+                title: 'Cancelar orden',
+                text: 'Si cierras ahora, se perderan los productos agregados. ¿Deseas continuar?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si, cancelar',
+                cancelButtonText: 'No, continuar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    closeModal();
+                }
+            });
+            return;
+        }
+
+        if (confirm('Si cierras ahora, se perderan los productos agregados. ¿Deseas continuar?')) {
+            closeModal();
+        }
+    }
 </script>

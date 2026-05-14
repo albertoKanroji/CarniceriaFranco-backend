@@ -5,12 +5,12 @@
                 <h5 class="modal-title">
                     <b>{{ $componentName }}</b> | Crear pedido
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" wire:click="requestCloseCreateOrderModal">
+                <button type="button" class="close text-white" aria-label="Close" onclick="confirmCloseCreateOrderModal()">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
-            <div class="modal-body create-order-body">
+            <div class="modal-body">
                 <div class="alert alert-light border mb-3">
                     <strong>Flujo:</strong> 1) Completa los datos del pedido, 2) busca y agrega productos, 3) valida el carrito y guarda.
                 </div>
@@ -131,7 +131,7 @@
                             <span class="badge badge-info">{{ $this->cartProductsCount }} unidades</span>
                         </div>
 
-                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <div class="table-responsive cart-table-scroll">
                             <table class="table table-bordered table-sm mb-0">
                                 <thead style="background: #3B3F5C; color: #fff; position: sticky; top: 0; z-index: 1;">
                                     <tr>
@@ -210,7 +210,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" wire:click="requestCloseCreateOrderModal">Cerrar</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="confirmCloseCreateOrderModal()">Cerrar</button>
                 <button type="button"
                         class="btn btn-success"
                         wire:click="createOrder"
@@ -242,9 +242,10 @@
         border-radius: 10px;
     }
 
-    .create-order-body {
-        max-height: calc(100vh - 180px);
+    .cart-table-scroll {
+        max-height: 280px;
         overflow-y: auto;
+        border: 1px solid #e9ecef;
     }
 
     .section-title {
