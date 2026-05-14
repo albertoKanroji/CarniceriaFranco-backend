@@ -5,9 +5,6 @@
                 <h5 class="modal-title">
                     <b>{{ $componentName }}</b> | Crear pedido
                 </h5>
-                <button type="button" class="close text-white" aria-label="Close" onclick="confirmCloseCreateOrderModal()">
-                    <span aria-hidden="true">&times;</span>
-                </button>
             </div>
 
             <div class="modal-body">
@@ -131,7 +128,7 @@
                             <span class="badge badge-info">{{ $this->cartProductsCount }} unidades</span>
                         </div>
 
-                        <div class="table-responsive cart-table-scroll">
+                        <div class="table-responsive {{ count($cart) >= 4 ? 'cart-table-scroll' : '' }}">
                             <table class="table table-bordered table-sm mb-0">
                                 <thead style="background: #3B3F5C; color: #fff; position: sticky; top: 0; z-index: 1;">
                                     <tr>

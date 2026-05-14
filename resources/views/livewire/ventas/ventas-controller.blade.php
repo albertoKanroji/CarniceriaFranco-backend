@@ -1,156 +1,151 @@
 <div class="row sales layout-top-spacing">
     <div class="col-sm-12">
-        <div class="widget widget-chart-one" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;">
-            <div class="widget-heading" style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%); padding: 20px;">
-                <h4 class="card-title" style="color: #C9A961; font-weight: 800; font-size: 24px; margin-bottom: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-                    {{ $componentName }} | <span style="background: rgba(201, 169, 97, 0.2); padding: 5px 12px; border-radius: 15px; border: 2px solid #C9A961;">{{ $ventas->total() }}</span>
+        <div class="widget widget-chart-one ventas-widget">
+            <div class="widget-heading ventas-heading">
+                <h4 class="card-title mb-0 d-flex flex-wrap align-items-center">
+                    <span class="ventas-title">{{ $componentName }}</span>
+                    <span class="ventas-total-badge ml-2">{{ $ventas->total() }} registros</span>
                 </h4>
-
             </div>
 
-            <!-- Estadísticas -->
-            <div class="row mb-4 mt-3" style="padding: 0 20px;">
-                <div class="col-md-4">
-                    <div class="card text-center" style="background: linear-gradient(135deg, #C9A961 0%, #B8935A 100%); color: #2C2C2C; border: 3px solid #D4B570; border-radius: 12px; box-shadow: 0 6px 20px rgba(201, 169, 97, 0.4); transform: translateY(0); transition: all 0.3s;">
-                        <div class="card-body" style="padding: 25px;">
-                            <div style="background: rgba(44, 44, 44, 0.15); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                                <i class="fas fa-dollar-sign" style="font-size: 28px; color: #2C2C2C;"></i>
+            <div class="widget-content pt-3 px-3 px-md-4">
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="card stat-card stat-card-gold">
+                            <div class="card-body">
+                                <p class="stat-label mb-1">Total periodo</p>
+                                <h3 class="stat-value mb-0">${{ number_format($totales['total_ventas'], 2) }}</h3>
                             </div>
-                            <h3 style="font-weight: 800; font-size: 32px; margin-bottom: 8px; text-shadow: 1px 1px 2px rgba(255,255,255,0.5);">${{ number_format($totales['total_ventas'], 2) }}</h3>
-                            <p class="mb-0" style="font-size: 15px; font-weight: 700; opacity: 0.9;">Total Periodo</p>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-center" style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%); color: #C9A961; border: 3px solid #8B7346; border-radius: 12px; box-shadow: 0 6px 20px rgba(44, 44, 44, 0.4); transform: translateY(0); transition: all 0.3s;">
-                        <div class="card-body" style="padding: 25px;">
-                            <div style="background: rgba(201, 169, 97, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                                <i class="fas fa-shopping-cart" style="font-size: 28px; color: #C9A961;"></i>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="card stat-card stat-card-dark">
+                            <div class="card-body">
+                                <p class="stat-label mb-1">Numero de ventas</p>
+                                <h3 class="stat-value mb-0">{{ $totales['numero_ventas'] }}</h3>
                             </div>
-                            <h3 style="font-weight: 800; font-size: 32px; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">{{ $totales['numero_ventas'] }}</h3>
-                            <p class="mb-0" style="font-size: 15px; font-weight: 700; opacity: 0.95;">Número de Ventas</p>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-center" style="background: linear-gradient(135deg, #B8935A 0%, #8B7346 100%); color: #2C2C2C; border: 3px solid #C9A961; border-radius: 12px; box-shadow: 0 6px 20px rgba(184, 147, 90, 0.4); transform: translateY(0); transition: all 0.3s;">
-                        <div class="card-body" style="padding: 25px;">
-                            <div style="background: rgba(44, 44, 44, 0.15); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                                <i class="fas fa-calendar-day" style="font-size: 28px; color: #2C2C2C;"></i>
+                    <div class="col-md-4">
+                        <div class="card stat-card stat-card-bronze">
+                            <div class="card-body">
+                                <p class="stat-label mb-1">Ventas hoy</p>
+                                <h3 class="stat-value mb-0">${{ number_format($totales['ventas_hoy'], 2) }}</h3>
                             </div>
-                            <h3 style="font-weight: 800; font-size: 32px; margin-bottom: 8px; text-shadow: 1px 1px 2px rgba(255,255,255,0.5);">${{ number_format($totales['ventas_hoy'], 2) }}</h3>
-                            <p class="mb-0" style="font-size: 15px; font-weight: 700; opacity: 0.9;">Ventas Hoy</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros -->
-            <div class="widget-content" style="padding: 20px;">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <input type="text" wire:model="search" class="form-control" placeholder="Buscar por folio o cliente..."
-                               style="border: 2px solid #e9ecef; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s;">
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <select wire:model="filtroEstatus" class="form-control"
-                                style="border: 2px solid #e9ecef; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s;">
-                            <option value="">Todos los estatus</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="completada">Completada</option>
-                            <option value="cancelada">Cancelada</option>
-                            <option value="entregada">Entregada</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <select wire:model="filtroMetodoPago" class="form-control"
-                                style="border: 2px solid #e9ecef; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s;">
-                            <option value="">Todos los métodos</option>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="tarjeta">Tarjeta</option>
-                            <option value="transferencia">Transferencia</option>
-                            <option value="credito">Crédito</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <input type="date" wire:model="fechaInicio" class="form-control"
-                               style="border: 2px solid #e9ecef; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s;">
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <input type="date" wire:model="fechaFin" class="form-control"
-                               style="border: 2px solid #e9ecef; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: 500; color: #495057; transition: all 0.3s;">
-                    </div>
-                    <div class="col-md-1 mb-3">
-                        <button wire:click="clearFilters" class="btn btn-block"
-                                style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; border: none; border-radius: 8px; padding: 10px; font-weight: 600; box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3); transition: all 0.3s;">
-                            <i class="fas fa-redo"></i>
-                        </button>
                     </div>
                 </div>
 
-                <div class="table-responsive" style="margin-top: 20px;">
-                    <table class="table table-bordered mt-1" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;">
-                        <thead style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%);">
+                <div class="card border-0 shadow-sm mb-3 ventas-filters-card">
+                    <div class="card-body pb-2">
+                        <div class="row align-items-end">
+                            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Buscar</label>
+                                <input type="text" wire:model="search" class="form-control" placeholder="Folio o cliente...">
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Estatus</label>
+                                <select wire:model="filtroEstatus" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="completada">Completada</option>
+                                    <option value="cancelada">Cancelada</option>
+                                    <option value="entregada">Entregada</option>
+                                </select>
+                            </div>
+                            <div class="col-xl-2 col-lg-4 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Metodo de pago</label>
+                                <select wire:model="filtroMetodoPago" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                    <option value="transferencia">Transferencia</option>
+                                    <option value="credito">Credito</option>
+                                </select>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Desde</label>
+                                <input type="date" wire:model="fechaInicio" class="form-control">
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3">
+                                <label class="text-muted filter-label">Hasta</label>
+                                <input type="date" wire:model="fechaFin" class="form-control">
+                            </div>
+                            <div class="col-xl-1 col-lg-2 col-md-6 col-sm-12 mb-3 d-flex">
+                                <button wire:click="clearFilters" class="btn btn-dark btn-block" title="Limpiar filtros">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive ventas-table-wrap">
+                    <table class="table table-bordered mt-1 mb-0 ventas-table">
+                        <thead>
                             <tr>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">FOLIO</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">FECHA</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">CLIENTE</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">ITEMS</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">SUBTOTAL</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">DESCUENTO</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">TOTAL</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">MÉTODO PAGO</th>
-                                <th class="table-th" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">ESTATUS</th>
-                                <th class="table-th text-center" style="color: #C9A961; font-weight: 800; padding: 15px; border: none; font-size: 13px; letter-spacing: 0.5px;">ACCIONES</th>
+                                <th class="table-th">FOLIO</th>
+                                <th class="table-th">FECHA</th>
+                                <th class="table-th">CLIENTE</th>
+                                <th class="table-th text-center">ITEMS</th>
+                                <th class="table-th text-right">SUBTOTAL</th>
+                                <th class="table-th text-right">DESCUENTO</th>
+                                <th class="table-th text-right">TOTAL</th>
+                                <th class="table-th">METODO PAGO</th>
+                                <th class="table-th">ESTATUS</th>
+                                <th class="table-th text-center">ACCIONES</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($ventas as $index => $venta)
-                                <tr style="{{ $index % 2 == 0 ? 'background-color: #f8f9fa;' : 'background-color: white;' }} transition: all 0.2s;">
-                                    <td style="padding: 15px; vertical-align: middle;">
-                                        <h6 class="mb-0" style="color: #212529; font-weight: 700; font-size: 14px;">{{ $venta->folio }}</h6>
+                                @php
+                                    $clienteNombre = $venta->customer ? $venta->customer->nombre . ' ' . $venta->customer->apellido : 'Cliente general';
+                                    $clienteEmail = $venta->customer->email ?? 'Sin email';
+                                @endphp
+                                <tr class="{{ $index % 2 == 0 ? 'ventas-row-even' : '' }}">
+                                    <td>
+                                        <h6 class="mb-0 font-weight-bold">{{ $venta->folio }}</h6>
                                     </td>
-                                    <td style="color: #495057; font-weight: 500; padding: 15px; vertical-align: middle; font-size: 14px;">{{ $venta->fecha_venta->format('d/m/Y H:i') }}</td>
-                                    <td style="padding: 15px; vertical-align: middle;">
-                                        <div style="color: #212529; font-weight: 600; font-size: 14px; margin-bottom: 3px;">{{ $venta->customer->nombre }} {{ $venta->customer->apellido }}</div>
-                                        <small style="color: #6c757d; font-size: 12px;">{{ $venta->customer->email }}</small>
+                                    <td>{{ $venta->fecha_venta->format('d/m/Y H:i') }}</td>
+                                    <td>
+                                        <div class="font-weight-600">{{ $clienteNombre }}</div>
+                                        <small class="text-muted">{{ $clienteEmail }}</small>
                                     </td>
-                                    <td class="text-center" style="padding: 15px; vertical-align: middle;">
-                                        <span class="badge" style="background: linear-gradient(135deg, #C9A961 0%, #B8935A 100%); color: #2C2C2C; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 15px; border: 2px solid #D4B570;">{{ $venta->details->count() }} items</span>
+                                    <td class="text-center">
+                                        <span class="badge badge-info">{{ $venta->details->count() }} items</span>
                                     </td>
-                                    <td style="color: #495057; font-weight: 600; padding: 15px; vertical-align: middle; font-size: 14px;">${{ number_format($venta->subtotal, 2) }}</td>
-                                    <td style="color: #dc3545; font-weight: 600; padding: 15px; vertical-align: middle; font-size: 14px;">${{ number_format($venta->descuento, 2) }}</td>
-                                    <td style="padding: 15px; vertical-align: middle;">
-                                        <h6 class="mb-0" style="color: #28a745; font-weight: 700; font-size: 16px;">${{ number_format($venta->total, 2) }}</h6>
+                                    <td class="text-right">${{ number_format($venta->subtotal, 2) }}</td>
+                                    <td class="text-right text-danger">-${{ number_format($venta->descuento, 2) }}</td>
+                                    <td class="text-right">
+                                        <h6 class="mb-0 text-success font-weight-bold">${{ number_format($venta->total, 2) }}</h6>
                                     </td>
-                                    <td style="padding: 15px; vertical-align: middle;">
+                                    <td>
                                         @if($venta->metodo_pago == 'efectivo')
-                                            <span class="badge" style="background: #28a745; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Efectivo</span>
+                                            <span class="badge badge-success">Efectivo</span>
                                         @elseif($venta->metodo_pago == 'tarjeta')
-                                            <span class="badge" style="background: #007bff; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Tarjeta</span>
+                                            <span class="badge badge-primary">Tarjeta</span>
                                         @elseif($venta->metodo_pago == 'transferencia')
-                                            <span class="badge" style="background: #17a2b8; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Transferencia</span>
+                                            <span class="badge badge-info">Transferencia</span>
                                         @else
-                                            <span class="badge" style="background: #ffc107; color: #000; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Crédito</span>
+                                            <span class="badge badge-warning">Credito</span>
                                         @endif
                                     </td>
-                                    <td style="padding: 15px; vertical-align: middle;">
+                                    <td>
                                         @if($venta->estatus == 'completada')
-                                            <span class="badge" style="background: #28a745; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Completada</span>
+                                            <span class="badge badge-success">Completada</span>
                                         @elseif($venta->estatus == 'pendiente')
-                                            <span class="badge" style="background: #ffc107; color: #000; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Pendiente</span>
+                                            <span class="badge badge-warning">Pendiente</span>
                                         @elseif($venta->estatus == 'cancelada')
-                                            <span class="badge" style="background: #dc3545; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Cancelada</span>
+                                            <span class="badge badge-danger">Cancelada</span>
                                         @else
-                                            <span class="badge" style="background: #17a2b8; color: white; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 15px;">Entregada</span>
+                                            <span class="badge badge-info">Entregada</span>
                                         @endif
                                     </td>
-                                    <td class="text-center" style="padding: 15px; vertical-align: middle;">
-                                        <button wire:click="viewDetail({{ $venta->id }})" class="btn mtmobile"
+                                    <td class="text-center">
+                                        <button wire:click="viewDetail({{ $venta->id }})" class="btn btn-sm btn-primary mtmobile"
                                             title="Ver Detalle"
                                             wire:loading.attr="disabled"
-                                            wire:target="viewDetail({{ $venta->id }})"
-                                            style="background: linear-gradient(135deg, #C9A961 0%, #B8935A 100%); color: #2C2C2C; border: 2px solid #D4B570; padding: 8px 12px; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 12px rgba(201, 169, 97, 0.4); transition: all 0.3s; margin: 2px;">
+                                            wire:target="viewDetail({{ $venta->id }})">
                                             <span wire:loading.remove wire:target="viewDetail({{ $venta->id }})">
                                                 <i class="fas fa-eye"></i>
                                             </span>
@@ -160,8 +155,7 @@
                                         </button>
                                         @if($venta->estatus != 'cancelada')
                                             <button onclick="confirmCancel({{ $venta->id }}, this)"
-                                                class="btn mtmobile" title="Cancelar"
-                                                style="background: linear-gradient(135deg, #2C2C2C 0%, #1a1a1a 100%); color: #C9A961; border: 2px solid #8B7346; padding: 8px 12px; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 12px rgba(44, 44, 44, 0.4); transition: all 0.3s; margin: 2px;">
+                                                class="btn btn-sm btn-outline-danger mtmobile" title="Cancelar">
                                                 <i class="fas fa-ban"></i>
                                             </button>
                                         @endif
@@ -189,6 +183,113 @@
         @include('livewire.ventas.detail-form')
     @endif
 </div>
+
+<style>
+    .ventas-widget {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .ventas-heading {
+        background: #3B3F5C;
+        padding: 20px;
+    }
+
+    .ventas-title {
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 22px;
+    }
+
+    .ventas-total-badge {
+        background: #f8f9fa;
+        color: #3B3F5C;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .stat-card {
+        border: 0;
+        border-radius: 12px;
+    }
+
+    .stat-card .card-body {
+        padding: 18px;
+    }
+
+    .stat-card-gold {
+        background: linear-gradient(135deg, #e7c77d 0%, #d5af59 100%);
+        color: #2c2c2c;
+    }
+
+    .stat-card-dark {
+        background: #3B3F5C;
+        color: #ffffff;
+    }
+
+    .stat-card-bronze {
+        background: linear-gradient(135deg, #d7b07b 0%, #bd9157 100%);
+        color: #2c2c2c;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        font-weight: 600;
+        opacity: .9;
+    }
+
+    .stat-value {
+        font-size: 26px;
+        font-weight: 800;
+    }
+
+    .ventas-filters-card {
+        border-radius: 10px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .ventas-table-wrap {
+        margin-top: 12px;
+    }
+
+    .ventas-table {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .ventas-table thead {
+        background: #3B3F5C;
+    }
+
+    .ventas-table .table-th {
+        color: #ffffff;
+        font-weight: 700;
+        padding: 12px;
+        border: none;
+        font-size: 12px;
+        letter-spacing: .3px;
+        vertical-align: middle;
+    }
+
+    .ventas-table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        font-size: 13px;
+    }
+
+    .ventas-row-even {
+        background-color: #f8f9fa;
+    }
+</style>
 
 <script>
     let cancellingButton = null;

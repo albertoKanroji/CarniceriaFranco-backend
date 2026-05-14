@@ -194,6 +194,10 @@
         gap: 10px;
     }
 
+    .swal2-container {
+        z-index: 3000 !important;
+    }
+
     .table-success {
         background-color: #d4edda !important;
     }
