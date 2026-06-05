@@ -6,6 +6,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\MercadoPagoController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\SitioApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +122,12 @@ Route::group(['middleware' => 'cors'], function () {
         Route::prefix('historial')->group(function () {
 
             Route::post('/guardar-accion', [LogController::class, 'store']);
+        });
+
+        // Rutas del Sitio Web (públicas — sin autenticación requerida)
+        Route::prefix('sitio')->group(function () {
+            Route::get('/config',  [SitioApiController::class, 'getConfig'])->name('api.sitio.config');
+            Route::get('/alertas', [SitioApiController::class, 'getAlertas'])->name('api.sitio.alertas');
         });
 
     });

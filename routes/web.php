@@ -13,6 +13,7 @@ use App\Http\Livewire\Productos\ProductosController;
 use App\Http\Livewire\RolesController;
 use App\Http\Livewire\UsersController;
 use App\Http\Livewire\Ventas\VentasController;
+use App\Http\Livewire\Sitio\SitioController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -45,7 +46,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('roles', RolesController::class);
             Route::get('permisos', PermisosController::class);
             Route::get('notificaciones', NotificacionesController::class);
+
         });
+        Route::get('sitio', SitioController::class);
     });
 
     Route::get('logs', LogsController::class);
