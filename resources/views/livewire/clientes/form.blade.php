@@ -47,15 +47,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-6 col-lg-3">
-        <div class="form-group">
-            <label>Contraseña <span class="text-danger">*</span></label>
-            <input type="password" wire:model.lazy="password" class="form-control" placeholder="Mínimo 6 caracteres">
-            @error('password')
-                <span class="text-danger er">{{ $message }}</span>
-            @enderror
-        </div>
-    </div>
+
 
     <div class="col-sm-12 col-md-6 col-lg-6">
         <div class="form-group">
@@ -109,7 +101,6 @@
             <select wire:model.lazy="tipo_cliente" class="form-control">
                 <option value="minorista">Minorista</option>
                 <option value="mayorista">Mayorista</option>
-                <option value="distribuidor">Distribuidor</option>
             </select>
             @error('tipo_cliente')
                 <span class="text-danger er">{{ $message }}</span>
@@ -129,24 +120,17 @@
             @enderror
         </div>
     </div>
-    <div class="col-sm-12 col-md-6 col-lg-3">
-        <div class="form-group">
-            <label>Límite de Crédito</label>
-            <input type="number" wire:model.lazy="limite_credito" class="form-control" placeholder="0.00" step="0.01">
-            @error('limite_credito')
-                <span class="text-danger er">{{ $message }}</span>
-            @enderror
+    @if($tipo_cliente === 'mayorista')
+        <div class="col-sm-12 col-md-6 col-lg-3">
+            <div class="form-group">
+                <label>Descuento Preferencial (%)</label>
+                <input type="number" wire:model.lazy="descuento_preferencial" class="form-control" placeholder="0.00" step="0.01" max="100">
+                @error('descuento_preferencial')
+                    <span class="text-danger er">{{ $message }}</span>
+                @enderror
+            </div>
         </div>
-    </div>
-    <div class="col-sm-12 col-md-6 col-lg-3">
-        <div class="form-group">
-            <label>Descuento Preferencial (%)</label>
-            <input type="number" wire:model.lazy="descuento_preferencial" class="form-control" placeholder="0.00" step="0.01" max="100">
-            @error('descuento_preferencial')
-                <span class="text-danger er">{{ $message }}</span>
-            @enderror
-        </div>
-    </div>
+    @endif
     <div class="col-sm-12 col-lg-6">
         <div class="form-group">
             <label>Notas</label>

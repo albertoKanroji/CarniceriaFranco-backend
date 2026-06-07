@@ -20,7 +20,6 @@ class ClientesController extends Component
     public $apellido;
     public $apellido2;
     public $correo;
-    public $password;
     public $telefono;
     public $direccion;
     public $ciudad;
@@ -30,7 +29,6 @@ class ClientesController extends Component
     public $rfc;
     public $tipo_cliente = 'minorista';
     public $estatus = 'activo';
-    public $limite_credito = 0;
     public $descuento_preferencial = 0;
     public $notas;
 
@@ -47,6 +45,14 @@ class ClientesController extends Component
     public function updatingSearch()
     {
         $this->resetPage();
+    }
+
+    public function updatedTipoCliente($value)
+    {
+        if ($value !== 'mayorista') {
+            $this->descuento_preferencial = 0;
+            $this->resetValidation('descuento_preferencial');
+        }
     }
 
     public function mount()
@@ -89,7 +95,6 @@ class ClientesController extends Component
         $this->apellido = '';
         $this->apellido2 = '';
         $this->correo = '';
-        $this->password = '';
         $this->telefono = '';
         $this->direccion = '';
         $this->ciudad = '';
@@ -99,7 +104,6 @@ class ClientesController extends Component
         $this->rfc = '';
         $this->tipo_cliente = 'minorista';
         $this->estatus = 'activo';
-        $this->limite_credito = 0;
         $this->descuento_preferencial = 0;
         $this->notas = '';
 
@@ -123,7 +127,6 @@ class ClientesController extends Component
         $this->rfc = $user->rfc;
         $this->tipo_cliente = $user->tipo_cliente;
         $this->estatus = $user->estatus;
-        $this->limite_credito = $user->limite_credito;
         $this->descuento_preferencial = $user->descuento_preferencial;
         $this->notas = $user->notas;
         $this->emit('show-modal', 'open!');
@@ -134,7 +137,7 @@ class ClientesController extends Component
 
         try {
             $payload = $this->customerPayload();
-            $payload['password'] = Hash::make($this->password);
+            $payload['password'] = Hash::make('defaultpassword');
 
             Customers::create($payload);
 
@@ -209,10 +212,8 @@ class ClientesController extends Component
             'rfc' => ['nullable', 'string', 'max:20'],
             'tipo_cliente' => ['required', Rule::in(['minorista', 'mayorista', 'distribuidor'])],
             'estatus' => ['required', Rule::in(['activo', 'inactivo', 'suspendido'])],
-            'limite_credito' => ['nullable', 'numeric', 'min:0'],
             'descuento_preferencial' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'notas' => ['nullable', 'string', 'max:1000'],
-            'password' => [$ignoreId > 0 ? 'nullable' : 'required', 'string', 'min:6', 'max:255'],
         ];
     }
 
@@ -229,10 +230,7 @@ class ClientesController extends Component
             'telefono.min' => 'El teléfono debe tener al menos 10 caracteres',
             'tipo_cliente.required' => 'Selecciona el tipo de cliente',
             'estatus.required' => 'Selecciona el estatus',
-            'password.required' => 'Ingresa la contraseña',
-            'password.min' => 'La contraseña debe tener al menos 6 caracteres',
             'descuento_preferencial.max' => 'El descuento no puede ser mayor a 100%',
-            'limite_credito.min' => 'El límite de crédito no puede ser negativo',
         ];
     }
 
@@ -252,8 +250,9 @@ class ClientesController extends Component
             'rfc' => $this->normalizeNullableText($this->rfc),
             'tipo_cliente' => $this->tipo_cliente,
             'estatus' => $this->estatus,
-            'limite_credito' => $this->limite_credito !== null && $this->limite_credito !== '' ? (float) $this->limite_credito : 0,
-            'descuento_preferencial' => $this->descuento_preferencial !== null && $this->descuento_preferencial !== '' ? (float) $this->descuento_preferencial : 0,
+            'descuento_preferencial' => $this->tipo_cliente === 'mayorista'
+                ? ($this->descuento_preferencial !== null && $this->descuento_preferencial !== '' ? (float) $this->descuento_preferencial : 0)
+                : 0,
             'notas' => $this->normalizeNullableText($this->notas),
         ];
     }

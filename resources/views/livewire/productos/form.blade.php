@@ -98,30 +98,7 @@
         </div>
     @endif
 
-    <div class="col-sm-12 col-md-6 col-lg-3">
-        <div class="form-group">
-            <label>Refrigerado</label>
-            <select wire:model.lazy="refrigerado" class="form-control">
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-            </select>
-            @error('refrigerado')
-                <span class="text-danger er">{{ $message }}</span>
-            @enderror
-        </div>
-    </div>
 
-    @if((int) $refrigerado === 1)
-    <div class="col-sm-12 col-md-6 col-lg-3">
-        <div class="form-group">
-            <label>Fecha Vencimiento <span class="text-danger">*</span></label>
-            <input type="date" wire:model.lazy="fecha_vencimiento" class="form-control">
-            @error('fecha_vencimiento')
-                <span class="text-danger er">{{ $message }}</span>
-            @enderror
-        </div>
-    </div>
-    @endif
 
     <div class="col-sm-12 col-md-6 col-lg-3">
         <div class="form-group">

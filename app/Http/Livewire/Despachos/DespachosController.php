@@ -27,6 +27,9 @@ class DespachosController extends Component
     public $filtroFolio = '';
     public $perPage = 15;
     public $updatingDetailId = null;
+    public $transferValidationSaleId = null;
+    public $transferValidationNote = '';
+    public $transferValidationData = [];
 
     // Crear pedido
     public $createCustomerId = '';
@@ -44,6 +47,7 @@ class DespachosController extends Component
         'closeCreateOrderModal' => 'closeCreateOrderModal',
         'createOrderModalClosed' => 'closeCreateOrderModal',
         'despachoModalClosed' => 'closeModal',
+        'transferValidationModalClosed' => 'closeTransferValidationModal',
     ];
 
     public function mount()
@@ -229,7 +233,8 @@ class DespachosController extends Component
                     'impuestos' => $impuestos,
                     'total' => $total,
                     'metodo_pago' => $this->createMetodoPago,
-                    'estatus' => 'completada',
+                    'estatus' => $this->createMetodoPago === 'transferencia' ? 'pendiente' : 'completada',
+                    'transferencia_estado' => $this->createMetodoPago === 'transferencia' ? 'pendiente' : null,
                     'notas' => $this->createNotas,
                     'estado_envio' => 'Pendiente',
                     'usuario_id' => auth()->id(),
@@ -333,6 +338,17 @@ class DespachosController extends Component
 
     public function openModal($saleId)
     {
+        $sale = Sale::find($saleId);
+        if (!$sale) {
+            $this->emit('despacho-error', 'Venta no encontrada');
+            return;
+        }
+
+        if (!$this->canManageDispatch($sale)) {
+            $this->emit('despacho-error', 'Debes validar la transferencia antes de gestionar el despacho');
+            return;
+        }
+
         $this->selectedSaleId = $saleId;
         $this->loadSaleDetails();
         $this->emit('show-modal', 'open!');
@@ -348,6 +364,102 @@ class DespachosController extends Component
     public function requestCloseModal()
     {
         $this->emit('hide-modal');
+    }
+
+    public function openTransferValidationModal($saleId)
+    {
+        $sale = Sale::with('customer')->find($saleId);
+
+        if (!$sale) {
+            $this->emit('despacho-error', 'Venta no encontrada');
+            return;
+        }
+
+        if ($sale->metodo_pago !== 'transferencia') {
+            $this->emit('despacho-error', 'La venta no corresponde a transferencia');
+            return;
+        }
+
+        $this->transferValidationSaleId = $sale->id;
+        $this->transferValidationNote = '';
+        $this->transferValidationData = [
+            'id' => $sale->id,
+            'folio' => $sale->folio,
+            'customer_nombre' => $sale->customer ? trim(($sale->customer->nombre ?? '') . ' ' . ($sale->customer->apellido ?? '')) : 'Cliente General',
+            'transferencia_estado' => $sale->transferencia_estado ?? 'pendiente',
+            'transferencia_evidencia_path' => $sale->transferencia_evidencia_path,
+            'transferencia_evidencia_url' => $sale->transferencia_evidencia_url,
+        ];
+        $this->emit('show-transfer-validation-modal');
+    }
+
+    public function closeTransferValidationModal()
+    {
+        $this->transferValidationSaleId = null;
+        $this->transferValidationNote = '';
+        $this->transferValidationData = [];
+    }
+
+    public function requestCloseTransferValidationModal()
+    {
+        $this->emit('hide-transfer-validation-modal');
+    }
+
+    public function approveTransfer()
+    {
+        $this->validateTransferDecision('aprobada');
+    }
+
+    public function rejectTransfer()
+    {
+        $this->validateTransferDecision('rechazada');
+    }
+
+    private function validateTransferDecision(string $decision)
+    {
+        if (!$this->transferValidationSaleId) {
+            $this->emit('despacho-error', 'No hay una venta seleccionada para validar');
+            return;
+        }
+
+        $sale = Sale::find($this->transferValidationSaleId);
+        if (!$sale) {
+            $this->emit('despacho-error', 'Venta no encontrada');
+            return;
+        }
+
+        if ($sale->metodo_pago !== 'transferencia') {
+            $this->emit('despacho-error', 'La venta no corresponde a transferencia');
+            return;
+        }
+
+        if (!$sale->transferencia_evidencia_path) {
+            $this->emit('despacho-error', 'El cliente no ha subido evidencia de transferencia');
+            return;
+        }
+
+        $sale->transferencia_estado = $decision;
+        $sale->transferencia_validada_at = now();
+        $sale->transferencia_validada_por = auth()->id();
+
+        if ($decision === 'aprobada') {
+            $sale->estatus = 'completada';
+        } else {
+            $notaActual = trim((string) $sale->notas);
+            $notaValidacion = 'Transferencia rechazada: ' . trim((string) $this->transferValidationNote ?: 'Sin observaciones');
+            $sale->notas = $notaActual !== '' ? $notaActual . PHP_EOL . $notaValidacion : $notaValidacion;
+            $sale->estatus = 'pendiente';
+        }
+
+        $sale->save();
+
+        $this->transferValidationData['transferencia_estado'] = $sale->transferencia_estado;
+
+        $this->emit('despacho-updated', $decision === 'aprobada'
+            ? 'Transferencia validada correctamente'
+            : 'Transferencia rechazada correctamente');
+        $this->emit('hide-transfer-validation-modal');
+        $this->closeTransferValidationModal();
     }
 
     private function loadSaleDetails()
@@ -372,6 +484,11 @@ class DespachosController extends Component
             $sale = Sale::find($detail->sale_id);
             if (!$sale) {
                 $this->emit('despacho-error', 'Venta no encontrada');
+                return;
+            }
+
+            if (!$this->canManageDispatch($sale)) {
+                $this->emit('despacho-error', 'Debes validar la transferencia antes de gestionar el despacho');
                 return;
             }
 
@@ -418,6 +535,11 @@ class DespachosController extends Component
 
             if (!$sale) {
                 $this->emit('despacho-error', 'Venta no encontrada');
+                return;
+            }
+
+            if (!$this->canManageDispatch($sale)) {
+                $this->emit('despacho-error', 'Debes validar la transferencia antes de gestionar el despacho');
                 return;
             }
 
@@ -592,5 +714,14 @@ class DespachosController extends Component
         }
 
         return $query;
+    }
+
+    public function canManageDispatch(Sale $sale): bool
+    {
+        if ($sale->metodo_pago !== 'transferencia') {
+            return true;
+        }
+
+        return $sale->transferencia_estado === 'aprobada';
     }
 }

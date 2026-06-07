@@ -22,6 +22,11 @@ class Sale extends Model
         'metodo_pago',
         'mercadopago_payment_id',
         'mercadopago_status',
+        'transferencia_estado',
+        'transferencia_evidencia_path',
+        'transferencia_subida_at',
+        'transferencia_validada_at',
+        'transferencia_validada_por',
         'estatus',
         'notas',
         'usuario_id',
@@ -34,6 +39,8 @@ class Sale extends Model
         'descuento' => 'decimal:2',
         'impuestos' => 'decimal:2',
         'total' => 'decimal:2',
+        'transferencia_subida_at' => 'datetime',
+        'transferencia_validada_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -42,6 +49,11 @@ class Sale extends Model
         'subtotal' => 0,
         'descuento' => 0,
         'impuestos' => 0,
+        'transferencia_estado' => null,
+    ];
+
+    protected $appends = [
+        'transferencia_evidencia_url',
     ];
 
     // Relación: Una venta pertenece a un cliente
@@ -102,6 +114,15 @@ class Sale extends Model
     public function getItemsCountAttribute()
     {
         return $this->details()->sum('cantidad');
+    }
+
+    public function getTransferenciaEvidenciaUrlAttribute()
+    {
+        if (!$this->transferencia_evidencia_path) {
+            return null;
+        }
+
+        return route('api.ventas.transferencia.evidencia.show', ['saleId' => $this->id]);
     }
 
     // Método estático para generar folio único

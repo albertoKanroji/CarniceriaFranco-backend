@@ -100,6 +100,12 @@ Route::group(['middleware' => 'cors'], function () {
             // Detalle de una compra específica
             Route::get('/{saleId}', [SalesController::class, 'getPurchaseDetail'])->name('api.ventas.detalle');
 
+            // Subir evidencia de transferencia (imagen/pdf)
+            Route::post('/{saleId}/evidencia-transferencia', [SalesController::class, 'uploadTransferEvidence'])->name('api.ventas.transferencia.evidencia');
+
+            // Ver evidencia de transferencia (imagen/pdf)
+            Route::get('/{saleId}/evidencia-transferencia', [SalesController::class, 'showTransferEvidence'])->name('api.ventas.transferencia.evidencia.show');
+
             // Cancelar una compra
             Route::put('/{saleId}/cancelar', [SalesController::class, 'cancelPurchase'])->name('api.ventas.cancelar');
         });

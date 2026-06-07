@@ -40,8 +40,6 @@ class ProductosController extends Component
     public $peso_promedio;
     public $activo      = 1;
     public $destacado   = 0;
-    public $refrigerado = 1;
-    public $fecha_vencimiento;
     public $etiquetas;
     public $selected_id = 0;
     public $search;
@@ -111,8 +109,6 @@ class ProductosController extends Component
         $this->peso_promedio     = '';
         $this->activo            = 1;
         $this->destacado         = 0;
-        $this->refrigerado       = 1;
-        $this->fecha_vencimiento = '';
         $this->etiquetas         = '';
         $this->selected_id       = 0;
         $this->monto_venta       = null;
@@ -166,12 +162,6 @@ class ProductosController extends Component
         }
     }
 
-    public function updatedRefrigerado($value)
-    {
-        if ((int) $value !== 1) {
-            $this->fecha_vencimiento = null;
-        }
-    }
 
     /**
      * Evento Livewire para cuando el usuario cambia la cantidad manualmente
@@ -199,10 +189,6 @@ class ProductosController extends Component
         $this->peso_promedio     = $product->peso_promedio;
         $this->activo            = $product->activo;
         $this->destacado         = $product->destacado;
-        $this->refrigerado       = $product->refrigerado;
-        $this->fecha_vencimiento = $product->fecha_vencimiento
-            ? date('Y-m-d', strtotime((string) $product->fecha_vencimiento))
-            : '';
         $this->etiquetas         = $product->etiquetas;
         $this->emit('show-modal', 'open!');
     }
@@ -302,8 +288,6 @@ class ProductosController extends Component
             'peso_promedio' => ['nullable', 'numeric', 'min:0'],
             'activo' => ['required', 'boolean'],
             'destacado' => ['required', 'boolean'],
-            'refrigerado' => ['required', 'boolean'],
-            'fecha_vencimiento' => ['nullable', 'required_if:refrigerado,1', 'date'],
             'etiquetas' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -326,8 +310,6 @@ class ProductosController extends Component
             'imagen.image' => 'El archivo debe ser una imagen válida',
             'imagen.mimes' => 'La imagen debe ser JPG, JPEG, PNG, GIF o WEBP',
             'imagen.max' => 'La imagen no puede superar 2MB',
-            'fecha_vencimiento.required_if' => 'Ingresa la fecha de vencimiento para productos refrigerados',
-            'fecha_vencimiento.date' => 'La fecha de vencimiento debe ser una fecha válida',
         ];
     }
 
@@ -347,8 +329,6 @@ class ProductosController extends Component
             'peso_promedio' => $this->normalizeNullableNumber($this->peso_promedio),
             'activo' => (bool) $this->activo,
             'destacado' => (bool) $this->destacado,
-            'refrigerado' => (bool) $this->refrigerado,
-            'fecha_vencimiento' => $this->fecha_vencimiento,
             'etiquetas' => $this->normalizeNullableText($this->etiquetas),
         ];
     }

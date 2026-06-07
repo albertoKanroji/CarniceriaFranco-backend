@@ -135,17 +135,38 @@
                                         </h6>
                                     </td>
                                     <td class="text-center">
-                                        <a href="javascript:void(0)" wire:click="openModal({{ $venta->id }})"
-                                            wire:loading.attr="disabled"
-                                            wire:target="openModal({{ $venta->id }})"
-                                            class="btn btn-primary btn-rounded mb-2" title="Gestionar Despacho">
-                                            <span wire:loading.remove wire:target="openModal({{ $venta->id }})">
+                                        @php
+                                            $transferenciaPendiente = $venta->metodo_pago === 'transferencia' && $venta->transferencia_estado !== 'aprobada';
+                                        @endphp
+
+                                        @if($transferenciaPendiente)
+                                            <button class="btn btn-secondary btn-rounded mb-2" disabled title="Debes validar la transferencia primero">
                                                 <i class="fas fa-boxes"></i>
-                                            </span>
-                                            <span wire:loading wire:target="openModal({{ $venta->id }})">
-                                                <i class="fas fa-spinner fa-spin"></i>
-                                            </span>
-                                        </a>
+                                            </button>
+                                            <a href="javascript:void(0)" wire:click="openTransferValidationModal({{ $venta->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="openTransferValidationModal({{ $venta->id }})"
+                                                class="btn btn-warning btn-rounded mb-2" title="Validar transferencia">
+                                                <span wire:loading.remove wire:target="openTransferValidationModal({{ $venta->id }})">
+                                                    <i class="fas fa-file-invoice-dollar"></i>
+                                                </span>
+                                                <span wire:loading wire:target="openTransferValidationModal({{ $venta->id }})">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                </span>
+                                            </a>
+                                        @else
+                                            <a href="javascript:void(0)" wire:click="openModal({{ $venta->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="openModal({{ $venta->id }})"
+                                                class="btn btn-primary btn-rounded mb-2" title="Gestionar Despacho">
+                                                <span wire:loading.remove wire:target="openModal({{ $venta->id }})">
+                                                    <i class="fas fa-boxes"></i>
+                                                </span>
+                                                <span wire:loading wire:target="openModal({{ $venta->id }})">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                </span>
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -171,6 +192,7 @@
         </div>
     </div>
     @include('livewire.despachos.modal')
+    @include('livewire.despachos.transfer-validation-modal')
     @include('livewire.despachos.create-order-modal')
 </div>
 
@@ -251,6 +273,14 @@
             $('#createOrderModal').modal('show');
         });
 
+        window.livewire.on('show-transfer-validation-modal', function() {
+            $('#transferValidationModal').modal('show');
+        });
+
+        window.livewire.on('hide-transfer-validation-modal', function() {
+            $('#transferValidationModal').modal('hide');
+        });
+
         window.livewire.on('hide-create-order-modal', function() {
             $('#createOrderModal').modal('hide');
         });
@@ -268,6 +298,12 @@
 
         $(document).on('hidden.bs.modal', '#createOrderModal', function () {
             window.livewire.emit('createOrderModalClosed');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        });
+
+        $(document).on('hidden.bs.modal', '#transferValidationModal', function () {
+            window.livewire.emit('transferValidationModalClosed');
             $('body').removeClass('modal-open');
             $('.modal-backdrop').remove();
         });

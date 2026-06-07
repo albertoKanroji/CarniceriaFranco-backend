@@ -10,6 +10,7 @@ use App\Services\OrderNotificationService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SalesController extends Controller
@@ -23,7 +24,7 @@ class SalesController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'metodo_pago' => 'required|in:efectivo,tarjeta,transferencia,credito,mercado_pago',
             'productos' => 'required|array|min:1',
-            'productos.*.product_id' => 'required|exists:products,id',
+            'productos.*.product_id' => 'required',
             'productos.*.cantidad' => 'required|numeric|min:0.01',
             'productos.*.monto_pesos' => 'nullable|numeric|min:0', // Para venta por monto
             'descuento' => 'nullable|numeric|min:0',
@@ -49,10 +50,10 @@ class SalesController extends Controller
 
             // Validar stock y calcular totales
             foreach ($request->productos as $item) {
-                $product = Product::find($item['product_id']);
+                $product = $this->resolveProductByIdentifier($item['product_id']);
 
                 if (!$product) {
-                    throw new Exception("Producto con ID {$item['product_id']} no encontrado");
+                    throw new Exception("Producto {$item['product_id']} no encontrado");
                 }
 
                 if (!$product->activo) {
@@ -111,9 +112,10 @@ class SalesController extends Controller
                 'impuestos' => $impuestos,
                 'total' => $total,
                 'metodo_pago' => $request->metodo_pago,
-                'estatus' => 'completada',
+                'estatus' => $request->metodo_pago === 'transferencia' ? 'pendiente' : 'completada',
                 'notas' => $request->notas,
                 'estado_envio' => 'Pendiente', // Estado inicial para seguimiento
+                'transferencia_estado' => $request->metodo_pago === 'transferencia' ? 'pendiente' : null,
             ];
 
             // Agregar información de Mercado Pago si existe
@@ -702,5 +704,160 @@ class SalesController extends Controller
                 'data' => null
             ], 500);
         }
+    }
+
+    /**
+     * Subir evidencia de transferencia (imagen o PDF) para una venta.
+     */
+    public function uploadTransferEvidence(Request $request, $saleId)
+    {
+        $validator = Validator::make($request->all(), [
+            'evidencia' => 'required|file|mimes:jpeg,jpg,png,webp,pdf|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'status' => 422,
+                'message' => 'Error de validación',
+                'data' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $sale = Sale::find($saleId);
+
+            if (!$sale) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Venta no encontrada',
+                    'data' => null
+                ], 404);
+            }
+
+            if ($sale->metodo_pago !== 'transferencia') {
+                return response()->json([
+                    'success' => false,
+                    'status' => 400,
+                    'message' => 'La venta no es por transferencia',
+                    'data' => null
+                ], 400);
+            }
+
+            if ($sale->estatus === 'cancelada') {
+                return response()->json([
+                    'success' => false,
+                    'status' => 400,
+                    'message' => 'No se puede subir evidencia para una venta cancelada',
+                    'data' => null
+                ], 400);
+            }
+
+            if ($sale->transferencia_evidencia_path) {
+                Storage::disk('public')->delete($sale->transferencia_evidencia_path);
+            }
+
+            $path = $request->file('evidencia')->store('transferencias', 'public');
+
+            $sale->transferencia_evidencia_path = $path;
+            $sale->transferencia_estado = 'pendiente';
+            $sale->transferencia_subida_at = now();
+            $sale->transferencia_validada_at = null;
+            $sale->transferencia_validada_por = null;
+            $sale->save();
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'message' => 'Evidencia de transferencia subida correctamente',
+                'data' => [
+                    'sale_id' => $sale->id,
+                    'transferencia_estado' => $sale->transferencia_estado,
+                    'transferencia_evidencia_url' => $sale->transferencia_evidencia_url,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'status' => 500,
+                'message' => 'Error al subir evidencia: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    /**
+     * Mostrar evidencia de transferencia almacenada en disco public.
+     */
+    public function showTransferEvidence($saleId)
+    {
+        try {
+            $sale = Sale::find($saleId);
+
+            if (!$sale) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Venta no encontrada',
+                    'data' => null
+                ], 404);
+            }
+
+            if ($sale->metodo_pago !== 'transferencia') {
+                return response()->json([
+                    'success' => false,
+                    'status' => 400,
+                    'message' => 'La venta no corresponde a transferencia',
+                    'data' => null
+                ], 400);
+            }
+
+            if (!$sale->transferencia_evidencia_path) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'La venta no tiene evidencia de transferencia',
+                    'data' => null
+                ], 404);
+            }
+
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($sale->transferencia_evidencia_path)) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Archivo de evidencia no encontrado',
+                    'data' => null
+                ], 404);
+            }
+
+            $mimeType = $disk->mimeType($sale->transferencia_evidencia_path) ?: 'application/octet-stream';
+
+            return $disk->response(
+                $sale->transferencia_evidencia_path,
+                basename($sale->transferencia_evidencia_path),
+                [
+                    'Content-Type' => $mimeType,
+                    'Content-Disposition' => 'inline; filename="' . basename($sale->transferencia_evidencia_path) . '"',
+                ]
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'status' => 500,
+                'message' => 'Error al obtener evidencia: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    private function resolveProductByIdentifier($identifier)
+    {
+        return Product::query()
+            ->where('id', $identifier)
+            ->orWhere('codigo', (string) $identifier)
+            ->first();
     }
 }
