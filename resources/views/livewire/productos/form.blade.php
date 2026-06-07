@@ -39,17 +39,27 @@
     <div class="col-sm-12 col-md-6 col-lg-3">
         <div class="form-group">
             <label>Unidad de Venta <span class="text-danger">*</span></label>
-            <select wire:model.lazy="unidad_venta" class="form-control">
+            <select wire:model="unidad_venta" class="form-control">
                 <option value="kilogramo">Kilogramo</option>
-                <option value="gramo">Gramo</option>
                 <option value="pieza">Pieza</option>
-                <option value="paquete">Paquete</option>
-                <option value="caja">Caja</option>
-                <option value="litro">Litro</option>
+                <option value="pesos">Pesos</option>
             </select>
             @error('unidad_venta')
                 <span class="text-danger er">{{ $message }}</span>
             @enderror
+        </div>
+    </div>
+
+    <div class="col-sm-12 col-md-6 col-lg-3">
+        <div class="form-group">
+            <label class="d-block">Venta por gramos</label>
+            <div class="custom-control custom-checkbox mt-2">
+                <input type="checkbox" wire:model="venta_por_gramos" class="custom-control-input" id="ventaPorGramosCheck" @if($unidad_venta === 'pieza') disabled @endif>
+                <label class="custom-control-label" for="ventaPorGramosCheck">Sí, se vende por gramos</label>
+            </div>
+            @if($unidad_venta === 'pieza')
+                <small class="text-muted">No aplica para productos por pieza.</small>
+            @endif
         </div>
     </div>
 
@@ -65,7 +75,7 @@
 
     <div class="col-sm-12 col-md-6 col-lg-3">
         <div class="form-group">
-            <label>Precio <span class="text-danger">*</span></label>
+            <label>{{ $venta_por_gramos ? 'Precio del kilo' : 'Precio' }} <span class="text-danger">*</span></label>
             <input type="number" wire:model.lazy="precio" class="form-control" placeholder="0.00" step="0.01" min="0">
             @error('precio')
                 <span class="text-danger er">{{ $message }}</span>
@@ -123,10 +133,13 @@
     <div class="col-sm-12 col-md-6 col-lg-3">
         <div class="form-group">
             <label>Peso Promedio (kg)</label>
-            <input type="number" wire:model.lazy="peso_promedio" class="form-control" placeholder="0.00" step="0.01" min="0">
+            <input type="number" wire:model.lazy="peso_promedio" class="form-control" placeholder="0.00" step="0.01" min="0" @if($unidad_venta !== 'pieza') disabled @endif>
             @error('peso_promedio')
                 <span class="text-danger er">{{ $message }}</span>
             @enderror
+            @if($unidad_venta !== 'pieza')
+                <small class="text-muted">Solo aplica cuando la unidad de venta es pieza.</small>
+            @endif
         </div>
     </div>
 

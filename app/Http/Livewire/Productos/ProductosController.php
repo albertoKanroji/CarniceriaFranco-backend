@@ -47,6 +47,7 @@ class ProductosController extends Component
                                    // Campos para venta por monto
     public $monto_venta    = null; // Monto en pesos que el cliente pide
     public $cantidad_venta = null; // Cantidad en gramos/kilos calculada
+    public $venta_por_gramos = false;
 
     public function mount()
     {
@@ -113,6 +114,7 @@ class ProductosController extends Component
         $this->selected_id       = 0;
         $this->monto_venta       = null;
         $this->cantidad_venta    = null;
+        $this->venta_por_gramos  = false;
         $this->resetValidation();
         $this->resetPage();
     }
@@ -131,13 +133,13 @@ class ProductosController extends Component
             return null;
         }
 
-        if (in_array($unidad_venta, ['kilogramo', 'gramo'])) {
+        if ($this->venta_por_gramos || in_array($unidad_venta, ['kilogramo', 'gramo'])) {
             $cantidad_kg = $monto / $precio; // cantidad en kilos
             if ($unidad_venta === 'kilogramo') {
                 return round($cantidad_kg * 1000, 2); // gramos
             }
 
-            if ($unidad_venta === 'gramo') {
+            if ($unidad_venta === 'gramo' || $this->venta_por_gramos) {
                 return round($cantidad_kg * 1000, 2); // gramos
             }
         }
@@ -160,6 +162,27 @@ class ProductosController extends Component
         if ((int) $value !== 1) {
             $this->precio_oferta = null;
         }
+    }
+
+    public function updatedUnidadVenta($value)
+    {
+        if ($value !== 'pieza') {
+            $this->peso_promedio = null;
+        }
+
+        if ($value === 'pieza') {
+            $this->venta_por_gramos = false;
+        }
+    }
+
+    public function updatedVentaPorGramos($value)
+    {
+        if ((bool) $value) {
+            $this->unidad_venta = 'kilogramo';
+        }
+
+        $precio_final = $this->en_oferta && $this->precio_oferta ? $this->precio_oferta : $this->precio;
+        $this->cantidad_venta = $this->calcularCantidadPorMonto($this->monto_venta, $precio_final, $this->unidad_venta);
     }
 
 
@@ -190,6 +213,7 @@ class ProductosController extends Component
         $this->activo            = $product->activo;
         $this->destacado         = $product->destacado;
         $this->etiquetas         = $product->etiquetas;
+        $this->venta_por_gramos  = in_array($product->unidad_venta, ['kilogramo', 'gramo']);
         $this->emit('show-modal', 'open!');
     }
 
@@ -281,7 +305,7 @@ class ProductosController extends Component
             'precio' => ['required', 'numeric', 'min:0'],
             'precio_oferta' => ['nullable', 'required_if:en_oferta,1', 'numeric', 'min:0'],
             'en_oferta' => ['required', 'boolean'],
-            'unidad_venta' => ['required', Rule::in(['kilogramo', 'gramo', 'pieza', 'paquete', 'caja', 'litro'])],
+            'unidad_venta' => ['required', Rule::in(['kilogramo', 'gramo', 'pieza', 'paquete', 'caja', 'litro', 'pesos'])],
             'stock' => ['required', 'numeric', 'min:0'],
             'stock_minimo' => ['required', 'numeric', 'min:0'],
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
@@ -323,7 +347,7 @@ class ProductosController extends Component
             'precio' => (float) $this->precio,
             'precio_oferta' => $this->normalizeNullableNumber($this->precio_oferta),
             'en_oferta' => (bool) $this->en_oferta,
-            'unidad_venta' => $this->unidad_venta,
+            'unidad_venta' => $this->venta_por_gramos ? 'kilogramo' : $this->unidad_venta,
             'stock' => (float) $this->stock,
             'stock_minimo' => (float) $this->stock_minimo,
             'peso_promedio' => $this->normalizeNullableNumber($this->peso_promedio),
